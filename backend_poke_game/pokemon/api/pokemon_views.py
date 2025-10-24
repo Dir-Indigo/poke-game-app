@@ -94,5 +94,6 @@ def fetch_pokemon_data(poke_id=None, randomize=False):
         "attack": stats.get("attack", 50),
         "defense": stats.get("defense", 50),
         "sprite_url": data["sprites"]["front_default"],
+        "back_sprite_url": data["sprites"]["back_default"],
         "types": types,
     }

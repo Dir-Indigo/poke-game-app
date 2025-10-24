@@ -1,0 +1,10 @@
+{
+  // Establece Prettier como el formateador por defecto
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  // Formatea el archivo automáticamente al guardar
+  "editor.formatOnSave": true,
+  // Asegura que la tecla Tab inserte 2 espacios
+  "editor.tabSize": 2,
+  // Le dice al editor que no intente adivinar la indentación, que use nuestra regla
+  "editor.detectIndentation": false
+}

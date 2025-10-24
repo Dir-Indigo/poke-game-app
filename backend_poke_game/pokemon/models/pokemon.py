@@ -10,6 +10,7 @@ class Pokemon(models.Model):
     attack = models.IntegerField()
     defense = models.IntegerField()
     sprite_url = models.URLField(blank=True, null=True)
+    back_sprite_url = models.URLField(blank=True, null=True)
     types = models.JSONField(default=list, blank=True)
     caught_at = models.DateTimeField(auto_now_add=True)
     
