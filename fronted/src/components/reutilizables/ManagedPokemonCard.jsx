@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { updatePokemonNickname } from '../../services/pokemonService';
+import { updatePokemonNicknameService } from '../../services/pokemonService';
 import RegularButton from './RegularButton';
 import SelectablePokemonCard from './SelectablePokemonCard';
 import TextInput from './TextInput';
@@ -13,7 +13,7 @@ function ManagedPokemonCard({ pokemon, onUpdate }) {
     e.preventDefault();
     setError('');
     try {
-      const updatedPokemon = await updatePokemonNickname(pokemon.id, nickname);
+      const updatedPokemon = await updatePokemonNicknameService(pokemon.id, nickname);
       onUpdate(updatedPokemon);
       setIsEditing(false);
     } catch (err) {

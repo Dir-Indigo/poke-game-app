@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
-import { getUserPokemonsService, getRandomPokemon, savePokemon } from '../services/pokemonService';
+import { getUserPokemonsService, getRandomPokemonService, savePokemonService } from '../services/pokemonService';
 import SelectablePokemonCard from '../components/reutilizables/SelectablePokemonCard';
 import RegularButton from '../components/reutilizables/RegularButton';
 import ManagedPokemonCard from '../components/reutilizables/ManagedPokemonCard';
@@ -29,9 +29,9 @@ function Dashboard() {
         if (userPokemons.length === 0) {
           // Usamos Promise.all para hacer las 3 peticiones en paralelo
           const choices = await Promise.all([
-            getRandomPokemon(),
-            getRandomPokemon(),
-            getRandomPokemon(),
+            getRandomPokemonService(),
+            getRandomPokemonService(),
+            getRandomPokemonService(),
           ]);
           setInitialChoices(choices);
         } else {
@@ -51,7 +51,7 @@ function Dashboard() {
     try {
       setLoading(true);
       // Guardamos el Pokémon elegido, usando su nombre como apodo inicial.
-      const saved = await savePokemon(selectedPokemon.poke_id, selectedPokemon.name);
+      const saved = await savePokemonService(selectedPokemon.poke_id, selectedPokemon.name);
       setPokemons([saved]); // Mostramos el Pokémon elegido
       setInitialChoices([]); // Limpiamos las opciones
     } catch (err) {

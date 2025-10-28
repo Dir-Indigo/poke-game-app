@@ -1,9 +1,5 @@
 import djangoApi from './djangoApi';
 
-/**
- * Obtiene la lista de Pokémon del usuario autenticado.
- * @returns {Promise<Array>} Una lista de los Pokémon del usuario.
- */
 export const getUserPokemonsService = async () => {
   try {
     const response = await djangoApi.get('/pokemon/');
@@ -14,11 +10,7 @@ export const getUserPokemonsService = async () => {
   }
 };
 
-/**
- * Obtiene un Pokémon aleatorio y lo asigna al usuario.
- * @returns {Promise<Object>} El Pokémon aleatorio generado.
- */
-export const getRandomPokemon = async () => {
+export const getRandomPokemonService = async () => {
   try {
     const response = await djangoApi.get('/pokemon/random/');
     return response.data;
@@ -28,12 +20,7 @@ export const getRandomPokemon = async () => {
   }
 };
 
-/**
- * Guarda un nuevo Pokémon para el usuario con un apodo.
- * @param {number} poke_id - El ID del Pokémon de la Pokédex.
- * @returns {Promise<Object>} El Pokémon guardado.
- */
-export const savePokemon = async (poke_id) => {
+export const savePokemonService = async (poke_id) => {
   try {
     const response = await djangoApi.post('/pokemon/', { poke_id });
     return response.data;
@@ -43,13 +30,7 @@ export const savePokemon = async (poke_id) => {
   }
 };
 
-/**
- * Actualiza el apodo de un Pokémon específico.
- * @param {number} pokemonId - El ID del Pokémon del usuario.
- * @param {string} nickname - El nuevo apodo para el Pokémon.
- * @returns {Promise<Object>} El Pokémon con el apodo actualizado.
- */
-export const updatePokemonNickname = async (pokemonId, nickname) => {
+export const updatePokemonNicknameService = async (pokemonId, nickname) => {
   try {
     const response = await djangoApi.patch(`/pokemon/${pokemonId}/nickname/`, { nickname });
     return response.data;
@@ -59,12 +40,7 @@ export const updatePokemonNickname = async (pokemonId, nickname) => {
   }
 };
 
-/**
- * Elimina un Pokémon del equipo del usuario.
- * @param {number} pokemonId - El ID del Pokémon a eliminar.
- * @returns {Promise<void>}
- */
-export const deletePokemon = async (pokemonId) => {
+export const deletePokemonService = async (pokemonId) => {
   try {
     await djangoApi.delete(`/pokemon/${pokemonId}/`);
   } catch (error) {
@@ -73,14 +49,8 @@ export const deletePokemon = async (pokemonId) => {
   }
 };
 
-/**
- * Registra el uso de curaciones para el jugador.
- * (Asume que el backend decrementa 1 cura por llamada, sin necesidad de un parámetro 'count' en el payload)
- * @returns {Promise<Object>} La información actualizada del jugador.
- */
-export const registerHealUse = async () => {
+export const registerHealUseService = async () => {
   try {
-    // Enviamos un objeto vacío para cumplir con el Content-Type: application/json que Axios envía por defecto.
     const response = await djangoApi.post('/players/use-heal/', {});
     return response.data;
   } catch (error) {
@@ -88,3 +58,15 @@ export const registerHealUse = async () => {
     throw new Error(error.response?.data?.detail || 'No se pudo actualizar el número de curaciones.');
   }
 };
+
+export const resetHealsService = async () => {
+  try {
+    const response = await djangoApi.post('/players/reset-heals/', {});
+    return response.data;
+  } catch (error) {
+    console.error("Error al resetear el uso de curaciones:", error.response?.data || error.message);
+    throw new Error(error.response?.data?.detail || 'No se pudo actualizar el número de curaciones.');
+  }
+};
+
+
