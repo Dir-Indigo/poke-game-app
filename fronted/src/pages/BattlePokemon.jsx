@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getUserPokemons, getRandomPokemon, savePokemon, deletePokemon, registerHealUse } from '../services/pokemonService';
+import { getUserPokemonsService, getRandomPokemon, savePokemon, deletePokemon, registerHealUse } from '../services/pokemonService';
 import HealthBar from '../components/reutilizables/HealthBar';
 import { useAuth } from '../context/AuthContext';
 import RegularButton from '../components/reutilizables/RegularButton';
@@ -37,7 +37,7 @@ function BattlePokemon() {
     const setupBattle = async () => {
       try {
         const [pokemons, opponent] = await Promise.all([
-          getUserPokemons(),
+          getUserPokemonsService(),
           getRandomPokemon(),
         ]);
 
@@ -67,11 +67,15 @@ function BattlePokemon() {
         // 1. Actualizar las curaciones usadas en el backend
         let finalUpdatedUser = null;
         if (healsUsed.current > 0) {
-          const healPromises = Array(healsUsed.current).fill(null).map(() => registerHealUse());
-          const results = await Promise.all(healPromises);
-          finalUpdatedUser = results[results.length - 1]; // El último resultado tiene el estado más actualizado
+          // Usamos un bucle for...of con await para asegurar que las llamadas se hagan en secuencia.
+          // Esto previene el error "No heals left" si el usuario hace clic más rápido de lo que el estado se actualiza.
+          const healRequests = Array(healsUsed.current).fill(null);
+          for (const _ of healRequests) {
+            finalUpdatedUser = await registerHealUse();
+          }
+
           if (finalUpdatedUser) {
-            setUser(prev => ({ ...prev, curas_restantes: finalUpdatedUser.heals }));
+            setUser({ ...user, curas_restantes: finalUpdatedUser.heals_left });
           }
         }
       } catch (err) {
@@ -89,6 +93,9 @@ function BattlePokemon() {
       // Simulación de daño
       const playerDamage = Math.floor(Math.max(10, playerPokemon.attack / 5 + (Math.random() * 10 - 5)));
       const opponentDamage = Math.floor(Math.max(10, opponentPokemon.attack / 5 + (Math.random() * 10 - 5)));
+      console.log(`Player Damage: ${playerDamage}, Opponent Damage: ${opponentDamage}`);
+      console.log(`Player HP: ${playerCurrentHp}, Opponent HP: ${opponentCurrentHp}`);
+
 
       // Mostrar animación de golpe
       setShowHit({ player: true, opponent: true });
@@ -106,10 +113,10 @@ function BattlePokemon() {
         setIsBattleOver(true);
         if (newPlayerHp === 0) {
           setBattleResult('lose');
-          setBattleLog(`¡${playerPokemon.name} ha sido derrotado!`);
+          setBattleLog(`¡${playerPokemon.nickmae} ha sido derrotado!`);
         } else {
           setBattleResult('win');
-          setBattleLog(`¡Has ganado! ¡${opponentPokemon.name} ha sido derrotado!`);
+          setBattleLog(`¡Has ganado! ¡${opponentPokemon.nickname} ha sido derrotado!`);
         }
       }
     }, 2000); // Cada 2 segundos hay un turno
@@ -125,7 +132,11 @@ function BattlePokemon() {
   };
 
   const handleHeal = () => {
-    if (heals > 0 && playerCurrentHp > 0 && !isBattleOver) {
+    // Verificación robusta para evitar condiciones de carrera.
+    // Comprobamos si las curaciones disponibles (del estado 'user') menos las ya usadas en esta batalla son mayores que cero.
+    const canHeal = (user.curas_restantes - healsUsed.current) > 0;
+
+    if (canHeal && playerCurrentHp > 0 && !isBattleOver) {
       setPlayerCurrentHp(Math.min(playerPokemon.hp, playerCurrentHp + 50));
       setHeals(heals - 1);
       healsUsed.current += 1;

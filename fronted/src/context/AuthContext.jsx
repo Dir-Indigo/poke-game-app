@@ -23,7 +23,20 @@ export function AuthProvider({ children }) {
     }
   }, [user]); // Ahora depende de 'user' para evitar la recarga si ya existe.
 
-  const value = { user, setUser };
+  // Creamos una función para actualizar el usuario que también actualiza localStorage
+  const updateUser = (newUserData) => {
+    // Actualizamos el estado de React
+    setUser(newUserData);
+
+    // Actualizamos también el localStorage para que los datos persistan
+    const storedUser = JSON.parse(localStorage.getItem('user')) || {};
+    const updatedStoredUser = { ...storedUser, ...newUserData, heals: newUserData.curas_restantes };
+    localStorage.setItem('user', JSON.stringify(updatedStoredUser));
+  };
+
+  // Exponemos la nueva función 'updateUser' en lugar de 'setUser' directamente.
+  // Mantenemos setUser por si se necesita en algún otro lugar, pero es mejor usar updateUser.
+  const value = { user, setUser: updateUser, updateUser };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -4,7 +4,7 @@ import djangoApi from './djangoApi';
  * Obtiene la lista de Pokémon del usuario autenticado.
  * @returns {Promise<Array>} Una lista de los Pokémon del usuario.
  */
-export const getUserPokemons = async () => {
+export const getUserPokemonsService = async () => {
   try {
     const response = await djangoApi.get('/pokemon/');
     return response.data;
@@ -80,7 +80,8 @@ export const deletePokemon = async (pokemonId) => {
  */
 export const registerHealUse = async () => {
   try {
-    const response = await djangoApi.post('/players/use-heal/'); // El endpoint no cambia
+    // Enviamos un objeto vacío para cumplir con el Content-Type: application/json que Axios envía por defecto.
+    const response = await djangoApi.post('/players/use-heal/', {});
     return response.data;
   } catch (error) {
     console.error("Error al registrar el uso de curaciones:", error.response?.data || error.message);

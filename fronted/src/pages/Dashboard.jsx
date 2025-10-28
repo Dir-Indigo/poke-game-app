@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
-import { getUserPokemons, getRandomPokemon, savePokemon } from '../services/pokemonService';
+import { getUserPokemonsService, getRandomPokemon, savePokemon } from '../services/pokemonService';
 import SelectablePokemonCard from '../components/reutilizables/SelectablePokemonCard';
 import RegularButton from '../components/reutilizables/RegularButton';
 import ManagedPokemonCard from '../components/reutilizables/ManagedPokemonCard';
@@ -23,7 +23,7 @@ function Dashboard() {
       if (hasLoaded.current) return;
       hasLoaded.current = true; // 3. Marcamos que la carga ha comenzado.
       try {
-        let userPokemons = await getUserPokemons();
+        let userPokemons = await getUserPokemonsService();
 
         // Si el usuario no tiene Pokémon, le generamos 3 iniciales
         if (userPokemons.length === 0) {
