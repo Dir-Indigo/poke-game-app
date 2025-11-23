@@ -7,29 +7,38 @@ from rest_framework.permissions import IsAuthenticated
 from pokemon.models import Pokemon
 
 
-# ===============================
+# ======================================================
 #   SERIALIZADOR PRINCIPAL
-# ===============================
+# ======================================================
 class PokemonSeriaizer(serializers.ModelSerializer):
     class Meta:
         model = Pokemon
         fields = '__all__'
-        read_only_fields = ['owner', 'caught_at']
+        read_only_fields = [
+            'owner',
+            'caught_at',
+            'wins',
+            'uses'
+        ]
 
 
-# ===============================
-#        VIEWSET PRINCIPAL
-# ===============================
+# ======================================================
+#                VIEWSET PRINCIPAL
+# ======================================================
 class PokemonViewSet(viewsets.ModelViewSet):
     queryset = Pokemon.objects.all()
     serializer_class = PokemonSeriaizer
     permission_classes = [IsAuthenticated]
 
-    # Solo ver mis propios Pokémon
+    # -------------------------------
+    # Mostrar solo Pokémon propios
+    # -------------------------------
     def get_queryset(self):
         return Pokemon.objects.filter(owner=self.request.user)
 
-    # Crear / Capturar un Pokémon
+    # -------------------------------
+    # Capturar un Pokémon
+    # -------------------------------
     def create(self, request, *args, **kwargs):
         player = request.user
 
@@ -62,10 +71,14 @@ class PokemonViewSet(viewsets.ModelViewSet):
             **poke_data
         )
 
-        serializer = self.get_serializer(pokemon)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(
+            self.get_serializer(pokemon).data,
+            status=status.HTTP_201_CREATED
+        )
 
-    # Borrar Pokémon
+    # -------------------------------
+    # Eliminar Pokémon
+    # -------------------------------
     def destroy(self, request, *args, **kwargs):
         pokemon = self.get_object()
         if pokemon.owner != request.user:
@@ -75,10 +88,13 @@ class PokemonViewSet(viewsets.ModelViewSet):
             )
         return super().destroy(request, *args, **kwargs)
 
+    # -------------------------------
     # Cambiar apodo
+    # -------------------------------
     @action(detail=True, methods=['patch'], url_path='nickname')
     def update_nickname(self, request, pk=None):
         pokemon = self.get_object()
+
         if pokemon.owner != request.user:
             return Response(
                 {"error": "You can only edit your own Pokémon."},
@@ -88,9 +104,12 @@ class PokemonViewSet(viewsets.ModelViewSet):
         nickname = request.data.get("nickname", "").strip() or None
         pokemon.nickname = nickname
         pokemon.save()
+
         return Response(self.get_serializer(pokemon).data)
 
-    # Un solo Pokémon aleatorio
+    # -------------------------------
+    # Pokémon aleatorio
+    # -------------------------------
     @action(detail=False, methods=['get'], url_path='random')
     def get_random_pokemon(self, request):
         try:
@@ -102,33 +121,153 @@ class PokemonViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-    # ============================================
-    #   NUEVO: GRUPO DE 2–4 POKÉMON SALVAJES
-    # ============================================
+    # -------------------------------
+    # Grupo aleatorio (2–4)
+    # -------------------------------
     @action(detail=False, methods=['get'], url_path='random-group')
     def get_random_group(self, request):
         try:
-            size = random.randint(2, 4)  
-            group = []
-
-            for _ in range(size):
-                poke_data = fetch_pokemon_data(randomize=True)
-                group.append(poke_data)
+            size = random.randint(2, 4)
+            group = [fetch_pokemon_data(randomize=True) for _ in range(size)]
 
             return Response({
                 "count": size,
                 "pokemons": group
             })
-
         except requests.RequestException:
             return Response(
                 {"error": "Could not fetch Pokémon from PokeAPI."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+    # ======================================================
+    #              ESTADÍSTICAS DEL JUGADOR
+    # ======================================================
+
+    @action(detail=False, methods=['get'], url_path='stats/me/most-wins')
+    def stats_my_most_wins(self, request):
+        player = request.user
+        pokemons = Pokemon.objects.filter(owner=player).order_by('-wins')
+
+        return Response({
+            "count": pokemons.count(),
+            "results": [{
+                "poke_id": p.poke_id,
+                "name": p.name,
+                "nickname": p.nickname,
+                "wins": p.wins,
+                "uses": p.uses,
+                "sprite_url": p.sprite_url
+            } for p in pokemons]
+        })
+
+    @action(detail=False, methods=['get'], url_path='stats/me/most-used')
+    def stats_my_most_used(self, request):
+        player = request.user
+        pokemons = Pokemon.objects.filter(owner=player).order_by('-uses')
+
+        return Response({
+            "count": pokemons.count(),
+            "results": [{
+                "poke_id": p.poke_id,
+                "name": p.name,
+                "nickname": p.nickname,
+                "wins": p.wins,
+                "uses": p.uses,
+                "sprite_url": p.sprite_url
+            } for p in pokemons]
+        })
+
+    @action(detail=False, methods=['get'], url_path='stats/me/summary')
+    def stats_my_summary(self, request):
+        player = request.user
+        pokemons = Pokemon.objects.filter(owner=player)
+
+        most_used = pokemons.order_by('-uses').first()
+        most_wins = pokemons.order_by('-wins').first()
+
+        return Response({
+            "total_pokemon": pokemons.count(),
+            "total_uses": sum(p.uses for p in pokemons),
+            "total_wins": sum(p.wins for p in pokemons),
+
+            "most_used": {
+                "name": most_used.name if most_used else None,
+                "uses": most_used.uses if most_used else None
+            },
+
+            "most_wins": {
+                "name": most_wins.name if most_wins else None,
+                "wins": most_wins.wins if most_wins else None
+            }
+        })
+
+    # ======================================================
+    #              ESTADÍSTICAS GLOBALES
+    # ======================================================
+
+    @action(detail=False, methods=['get'], url_path='stats/global/most-wins')
+    def stats_global_most_wins(self, request):
+        pokemons = Pokemon.objects.all().order_by('-wins')
+
+        return Response({
+            "count": pokemons.count(),
+            "results": [{
+                "player": p.owner.username,
+                "poke_id": p.poke_id,
+                "name": p.name,
+                "nickname": p.nickname,
+                "wins": p.wins,
+                "uses": p.uses,
+                "sprite_url": p.sprite_url
+            } for p in pokemons]
+        })
+
+    @action(detail=False, methods=['get'], url_path='stats/global/most-used')
+    def stats_global_most_used(self, request):
+        pokemons = Pokemon.objects.all().order_by('-uses')
+
+        return Response({
+            "count": pokemons.count(),
+            "results": [{
+                "player": p.owner.username,
+                "poke_id": p.poke_id,
+                "name": p.name,
+                "nickname": p.nickname,
+                "uses": p.uses,
+                "wins": p.wins,
+                "sprite_url": p.sprite_url
+            } for p in pokemons]
+        })
+
+    @action(detail=False, methods=['get'], url_path='stats/global/summary')
+    def stats_global_summary(self, request):
+        pokemons = Pokemon.objects.all()
+
+        most_used = pokemons.order_by('-uses').first()
+        most_wins = pokemons.order_by('-wins').first()
+
+        return Response({
+            "total_pokemon": pokemons.count(),
+            "total_uses": sum(p.uses for p in pokemons),
+            "total_wins": sum(p.wins for p in pokemons),
+
+            "most_used": {
+                "player": most_used.owner.username if most_used else None,
+                "name": most_used.name if most_used else None,
+                "uses": most_used.uses if most_used else None
+            },
+
+            "most_wins": {
+                "player": most_wins.owner.username if most_wins else None,
+                "name": most_wins.name if most_wins else None,
+                "wins": most_wins.wins if most_wins else None
+            }
+        })
+
 
 # ======================================================
-#        FUNCIÓN PARA OBTENER DATOS DE POKÉMON
+#   FUNCIÓN PARA OBTENER DATOS DESDE POKEAPI
 # ======================================================
 def fetch_pokemon_data(poke_id=None, randomize=False):
     if randomize:
@@ -137,7 +276,6 @@ def fetch_pokemon_data(poke_id=None, randomize=False):
     if not poke_id:
         raise ValueError("poke_id is required unless randomize=True")
 
-    # Llamado a la PokeAPI
     res = requests.get(f"https://pokeapi.co/api/v2/pokemon/{poke_id}")
     res.raise_for_status()
     data = res.json()
