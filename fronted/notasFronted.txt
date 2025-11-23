@@ -1,0 +1,1 @@
+1. ajustar el tamaño vertical del apodo en las cartas pokemon.

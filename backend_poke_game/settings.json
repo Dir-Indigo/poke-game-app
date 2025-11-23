@@ -1,0 +1,50 @@
+{
+  // ============================
+  //   PYTHON INTERPRETER
+  // ============================
+  "python.defaultInterpreterPath": "C:\\Users\\sdfsdf\\Downloads\\poke-game-app-main (2)\\poke-game-app-main\\backend_poke_game\\venv\\Scripts\\python.exe",
+
+  // ============================
+  //   EXTRA PATHS PARA IMPORTS
+  // ============================
+  "python.analysis.extraPaths": [
+    "C:\\Users\\sdfsdf\\Downloads\\poke-game-app-main (2)\\poke-game-app-main\\backend_poke_game\\venv\\Lib\\site-packages"
+  ],
+
+  // ============================
+  //   ANALYSIS & LINTING
+  // ============================
+  "python.analysis.diagnosticMode": "workspace",
+  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.autoImportCompletions": true,
+  "python.analysis.useLibraryCodeForTypes": true,
+
+  // ============================
+  //   FORMATEO (PEP8)
+  // ============================
+  "editor.formatOnSave": true,
+  "python.formatting.provider": "autopep8",
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.autopep8"
+  },
+
+  // ============================
+  //   LINTERS
+  // ============================
+  "python.linting.enabled": true,
+  "python.linting.flake8Enabled": true,
+  "python.linting.pylintEnabled": false,
+
+  // ============================
+  //   ARCHIVOS A IGNORAR
+  // ============================
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/*.pyc": true
+  },
+
+  // ============================
+  //   DJANGO SUPPORT
+  // ============================
+  "python.django": true
+}
