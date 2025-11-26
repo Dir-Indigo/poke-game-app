@@ -27,3 +27,9 @@ yarn-error.log*
 .idea/
 .DS_Store
 Thumbs.db
+
+# Ignorar base de datos local de Django
+db.sqlite3
+
+# Ignorar lockfile de frontend
+fronted/yarn.lock
