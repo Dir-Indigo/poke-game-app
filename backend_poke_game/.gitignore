@@ -1,0 +1,18 @@
+# --- Python / Django ---
+__pycache__/
+*.py[cod]
+.env
+venv/
+.env/
+*.log
+*.pot
+*.pyc
+migrations/
+staticfiles/
+media/
+
+# Ignorar base de datos local de Django
+db.sqlite3
+
+# Ignorar lockfile de frontend
+fronted/yarn.lock
