@@ -11,6 +11,20 @@
   --poke-dark-text: #213547;
   --poke-light-text: #f1f1f1;
 
+  /* Tipos de Pokemon */
+  --type-poison: #a855f7; /* bg-purple-500 */
+  --type-flying: #818cf8; /* bg-indigo-400 */
+  --type-fire: #ef4444;   /* bg-red-500 */
+  --type-water: #3b82f6;  /* bg-blue-500 */
+  --type-grass: #22c55e;  /* bg-green-500 */
+  --type-electric: #ddb100;/* bg-yellow-400 */
+  --type-normal: #9ca3af; /* bg-gray-400 */
+
+  --level-C: #606563;
+  --level-B: #4acd25;
+  --level-A: #025ed7;
+  --level-S: #830889;
+
   font-family: 'Press Start 2P', system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;

@@ -1,23 +1,30 @@
 import React from 'react';
 
-const typeColors = {
-  Poison: 'bg-purple-500',
-  Flying: 'bg-indigo-400',
-  Fire: 'bg-red-500',
-  Water: 'bg-blue-500',
-  Grass: 'bg-green-500',
-  Electric: 'bg-yellow-400',
-  Normal: 'bg-gray-400',
-};
-
 function SelectablePokemonCard({ pokemon, onSelect, children }) {
-  const cardClasses = `bg-gray-800 rounded-lg p-4 flex flex-col items-center shadow-lg border-2 border-gray-700 transition-transform duration-300 ${onSelect ? 'cursor-pointer transform hover:scale-105 hover:border-poke-yellow' : ''}`;
+  const cardClasses = `relative bg-gray-800 rounded-lg p-4 flex flex-col items-center shadow-lg border-2 border-gray-700 transition-transform duration-300 ${onSelect ? 'cursor-pointer transform hover:scale-105 hover:border-poke-yellow' : ''}`;
+
+  const getLevelColor = (level) => {
+    if (level >= 40) return 'var(--level-S)';
+    if (level >= 30) return 'var(--level-A)';
+    if (level >= 20) return 'var(--level-B)';
+    return 'var(--level-C)';
+  };
 
   return (
     <div
       className={cardClasses}
       onClick={() => onSelect && onSelect(pokemon)}
     >
+      {pokemon.level && (
+        <div
+          className={`absolute top-2 right-2 w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg border-2 border-gray-900`}
+          style={{ backgroundColor: getLevelColor(pokemon.level ) }}
+          title={`Nivel ${pokemon.level}`}
+        >
+          {pokemon.level}
+        </div>
+      )}
+
       <h2 className="text-xl font-bold text-poke-yellow mt-2">{pokemon.name}</h2>
       {children}
 
@@ -32,7 +39,13 @@ function SelectablePokemonCard({ pokemon, onSelect, children }) {
           </div>
           <div className="flex flex-wrap justify-center md:justify-start gap-2 mt-2">
             {pokemon.types.map((type) => (
-              <span key={type} className={`px-2 py-1 text-xs font-bold text-white rounded-full ${typeColors[type] || 'bg-gray-500'}`}>{type}</span>
+              <span
+                key={type}
+                className="px-2 py-1 text-xs font-bold text-white rounded-full"
+                style={{ backgroundColor: `var(--type-${type.toLowerCase()}, #718096)` }}
+              >
+                {type}
+              </span>
             ))}
           </div>
         </div>

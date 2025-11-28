@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getUserPokemonsService, getRandomPokemonService, savePokemonService, deletePokemonService, registerHealUseService, resetHealsService } from '../services/pokemonService';
+import { getUserPokemonsService, getRandomPokemonService, postSavePokemonService, deletePokemonService, postRegisterHealUseService, postResetHealsService, postWinBattleService } from '../services/pokemonService';
 import HealthBar from '../components/reutilizables/HealthBar';
 import { useAuth } from '../context/AuthContext';
-import { calculateTypeEffectiveness } from '../utils/typeEffectiveness';
+import { calculateTurnDetails } from '../utils/BattlePokemonUtils';
 import RegularButton from '../components/reutilizables/RegularButton';
 import { GiPotionBall } from 'react-icons/gi';
 
@@ -19,6 +19,7 @@ function BattlePokemon() {
   const [isBattleOver, setIsBattleOver] = useState(false);
   const [showHit, setShowHit] = useState({ player: false, opponent: false });
   const [battleResult, setBattleResult] = useState(null); // 'win' o 'lose'
+  const [statIncreases, setStatIncreases] = useState(null);
   const [damageInfo, setDamageInfo] = useState({ player: null, opponent: null });
   const healsUsed = useRef(0);
   const navigate = useNavigate();
@@ -64,13 +65,20 @@ function BattlePokemon() {
     const handleEndBattle = async () => {
       try {
         if (battleResult === 'win') {
-          const updatedUser = await resetHealsService();
+          const updatedUser = await postResetHealsService();
+          const updatedPokemonStats = await postWinBattleService(playerPokemon.id);
+          setStatIncreases({
+            hp: updatedPokemonStats.hp - playerPokemon.hp,
+            attack: updatedPokemonStats.attack - playerPokemon.attack,
+            defense: updatedPokemonStats.defense - playerPokemon.defense,
+            level: updatedPokemonStats.level
+          });
           setUser({ ...user, curas_restantes: updatedUser.heals });
         } else if (battleResult === 'lose' && healsUsed.current > 0) {
           let finalUpdatedUser = null;
           const healRequests = Array(healsUsed.current).fill(null);
           for (const _ of healRequests) {
-            finalUpdatedUser = await registerHealUseService();
+            finalUpdatedUser = await postRegisterHealUseService();
           }
 
           if (finalUpdatedUser) {
@@ -89,30 +97,12 @@ function BattlePokemon() {
     if (!playerPokemon || !opponentPokemon || isBattleOver) return;
 
     const battleInterval = setInterval(() => {
-      console.log("--- Turno ---");
-      console.log("Jugador:", playerPokemon);
-      console.log("Oponente:", opponentPokemon);
-      // Cálculo de daño base
-      const playerBaseDamage = Math.floor(Math.max(10, playerPokemon.attack / 5 + (Math.random() * 10 - 5)));
-      const opponentBaseDamage = Math.floor(Math.max(10, opponentPokemon.attack / 5 + (Math.random() * 10 - 5)));
-      
-      // Cálculo de efectividad de tipos
-      const playerEffectiveness = calculateTypeEffectiveness(opponentPokemon.types, playerPokemon.types);
-      const opponentEffectiveness = calculateTypeEffectiveness(playerPokemon.types, opponentPokemon.types);
-
-      // Cálculo de daño final
-      const finalPlayerDamage = Math.floor(opponentBaseDamage * playerEffectiveness.multiplier);
-      const finalOpponentDamage = Math.floor(playerBaseDamage * opponentEffectiveness.multiplier);
-
-      // Desglose del daño para mostrar en la UI
-      const opponentDamageBreakdown = {
-        base: playerBaseDamage,
-        extra: finalOpponentDamage - playerBaseDamage,
-      };
-      const playerDamageBreakdown = {
-        base: opponentBaseDamage,
-        extra: finalPlayerDamage - opponentBaseDamage,
-      };
+      const {
+        finalPlayerDamage,
+        finalOpponentDamage,
+        playerDamageBreakdown,
+        opponentDamageBreakdown
+      } = calculateTurnDetails(playerPokemon, opponentPokemon);
 
       // Actualizar estado para mostrar el daño y mensaje
       setDamageInfo({ player: playerDamageBreakdown, opponent: opponentDamageBreakdown });
@@ -167,7 +157,7 @@ function BattlePokemon() {
 
   const handleCapture = async () => {
     try {
-      await savePokemonService(opponentPokemon.poke_id);
+      await postSavePokemonService(opponentPokemon.poke_id);
       navigate('/dashboard');
     } catch (err) {
       setError(err.message + " No puedes tener mas de 10 pokemones :c");
@@ -217,6 +207,17 @@ function BattlePokemon() {
           {battleResult === 'win' && (
             <>
               <h2 className="text-4xl font-bold text-poke-yellow mb-4">¡VICTORIA!</h2>
+              {statIncreases && (
+                <div className="text-white mb-4 p-3 bg-black bg-opacity-50 rounded-lg">
+                  <h3 className="text-lg font-bold text-poke-yellow">¡Tu Pokémon se ha fortalecido!</h3>
+                  {statIncreases.level > playerPokemon.level && (
+                    <p className="text-xl text-green-400 font-bold animate-pulse">¡Subió al nivel {statIncreases.level}!</p>
+                  )}
+                  <p>HP: {playerPokemon.hp} + {statIncreases.hp}</p>
+                  <p>Ataque: {playerPokemon.attack} + {statIncreases.attack}</p>
+                  <p>Defensa: {playerPokemon.defense} + {statIncreases.defense}</p>
+                </div>
+              )}
               <p className="text-xl text-white mb-6">¿Quieres capturar a {opponentPokemon.name}?</p>
               <div className="flex gap-4">
                 <RegularButton onClick={handleCapture} className="bg-green-600 hover:bg-green-700">Capturar</RegularButton>
@@ -267,8 +268,8 @@ function BattlePokemon() {
           <img src={playerPokemon.back_sprite_url || playerPokemon.sprite_url} alt={playerPokemon.name} className="h-48 w-48" />
           <div className="bg-gray-200 p-2 rounded-lg border-4 border-gray-900 w-64 text-left -mt-8 ml-auto">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-bold text-gray-800">{playerPokemon.nickname || playerPokemon.name}</h3>
-              <p className="text-gray-600 font-semibold">HP</p>
+              <h3 className="text-lg font-bold text-gray-800">{playerPokemon.nickname || playerPokemon.name} LV{playerPokemon.level}</h3>
+              <p className="text-gray-600 font-semibold"> HP</p>
             </div>
             <HealthBar currentHp={playerCurrentHp} maxHp={playerPokemon.hp} />
             <p className="text-right text-gray-800 font-bold mt-1">{playerCurrentHp}/{playerPokemon.hp}</p>
@@ -279,7 +280,7 @@ function BattlePokemon() {
         <div className="flex flex-col items-start w-1/2 pl-10">
           <div className="bg-gray-200 p-2 rounded-lg border-4 border-gray-900 w-64 text-left mb-2 mr-auto ">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-bold text-gray-800">{opponentPokemon.name}</h3>
+              <h3 className="text-lg font-bold text-gray-800">{opponentPokemon.name} LV{opponentPokemon.level}</h3>
               <p className="text-gray-600 font-semibold">HP</p>
             </div>
             <HealthBar currentHp={opponentCurrentHp} maxHp={opponentPokemon.hp} />

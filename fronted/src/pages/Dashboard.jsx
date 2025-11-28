@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
-import { getUserPokemonsService, getRandomPokemonService, savePokemonService } from '../services/pokemonService';
+import { getUserPokemonsService, getRandomPokemonService, postSavePokemonService } from '../services/pokemonService';
 import SelectablePokemonCard from '../components/reutilizables/SelectablePokemonCard';
 import RegularButton from '../components/reutilizables/RegularButton';
 import ManagedPokemonCard from '../components/reutilizables/ManagedPokemonCard';
@@ -51,7 +51,7 @@ function Dashboard() {
     try {
       setLoading(true);
       // Guardamos el Pokémon elegido, usando su nombre como apodo inicial.
-      const saved = await savePokemonService(selectedPokemon.poke_id, selectedPokemon.name);
+      const saved = await postSavePokemonService(selectedPokemon.poke_id, selectedPokemon.name);
       setPokemons([saved]); // Mostramos el Pokémon elegido
       setInitialChoices([]); // Limpiamos las opciones
     } catch (err) {
@@ -94,7 +94,7 @@ function Dashboard() {
       );
     }
 
-    // Vista principal del Dashboard con el equipo del usuario
+
     return (
       <div>
         <h1 className="text-3xl font-bold mb-6">Tu Equipo Pokémon</h1>

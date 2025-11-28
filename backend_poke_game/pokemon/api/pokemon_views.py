@@ -5,14 +5,13 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from pokemon.models import Pokemon
 
-
 class PokemonSeriaizer(serializers.ModelSerializer):
     class Meta:
         model = Pokemon
         fields = '__all__'
         read_only_fields = ['owner', 'caught_at']
 
-
+MAX_LEVEL = 50
 class PokemonViewSet(viewsets.ModelViewSet):
     queryset = Pokemon.objects.all()
     serializer_class = PokemonSeriaizer
@@ -74,6 +73,26 @@ class PokemonViewSet(viewsets.ModelViewSet):
         return Response(poke_data)
 
 
+    @action(detail=True, methods=['post'], url_path='win')
+    def win_battle(self, request, pk=None):
+        pokemon = self.get_object()
+        if pokemon.owner != request.user:
+            return Response({"error": "You can only upgrade your own Pokémon."}, status=status.HTTP_403_FORBIDDEN)
+
+        divisor = 30
+        # Only increase stats if not at max level
+        if pokemon.level < MAX_LEVEL:
+            pokemon.hp += 3
+            pokemon.attack += 5
+            pokemon.defense += 5
+            pokemon.level = min(MAX_LEVEL, max(1, (pokemon.hp + pokemon.attack + pokemon.defense) // divisor))
+            pokemon.save()
+            serializer = self.get_serializer(pokemon)
+            return Response(serializer.data)
+        else:
+            return Response({"message": "Pokémon is already at max level."}, status=status.HTTP_200_OK)
+
+
 def fetch_pokemon_data(poke_id=None, randomize=False):
     if randomize:
         poke_id = random.randint(1, 1025)
@@ -87,6 +106,14 @@ def fetch_pokemon_data(poke_id=None, randomize=False):
     stats = {s["stat"]["name"]: s["base_stat"] for s in data["stats"]}
     types = [t["type"]["name"].capitalize() for t in data["types"]]
 
+    hp = stats.get("hp", 50) * 5
+    attack = stats.get("attack", 50)
+    defense = stats.get("defense", 50)
+
+    # Calculate level based on stats
+    divisor = 30
+    level = min(MAX_LEVEL, max(1, (hp + attack + defense) // divisor))
+
     return {
         "poke_id": data["id"],
         "name": data["name"].capitalize(),
@@ -96,4 +123,5 @@ def fetch_pokemon_data(poke_id=None, randomize=False):
         "sprite_url": data["sprites"]["front_default"],
         "back_sprite_url": data["sprites"]["back_default"],
         "types": types,
+        "level": level,
     }

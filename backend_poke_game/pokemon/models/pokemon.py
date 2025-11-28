@@ -6,6 +6,7 @@ class Pokemon(models.Model):
     nickname = models.CharField(max_length=100, blank=True, null=True)
     name = models.CharField(max_length=100)
     poke_id = models.IntegerField()
+    level = models.IntegerField(default=1)
     hp = models.IntegerField()
     attack = models.IntegerField()
     defense = models.IntegerField()
