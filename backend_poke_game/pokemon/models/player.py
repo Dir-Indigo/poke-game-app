@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.core.validators import MaxValueValidator
+from rest_framework.exceptions import ValidationError
+
 
 class PlayerManager(BaseUserManager):
     def create_user(self, username, password=None):
@@ -25,6 +27,7 @@ class Player(AbstractBaseUser, PermissionsMixin):
     heals = models.PositiveIntegerField(default=2, validators=[MaxValueValidator(2)])
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    team = models.ManyToManyField('Pokemon', related_name='players')
 
 
     USERNAME_FIELD = 'username'
@@ -33,13 +36,21 @@ class Player(AbstractBaseUser, PermissionsMixin):
     
     def use_heal(self):
         if self.heals > 0:
-            self.heals -= 1;
+            self.heals -= 1
             self.save()
     
     def reset_heals(self):
         self.heals = 2
         self.save()
 
+    def clean(self):
+        if self.team.count() > 4:
+            raise ValidationError("El equipo no puede tener mas de 4 pokemons")
+
+    def set_team(self, pokemon_ids):
+        if len(pokemon_ids) > 4:
+            raise ValidationError("El equipo no puede tener mas de 4 pokemons")
+        self.team.set(pokemon_ids)
+
     def __str__(self):
         return self.username
-	

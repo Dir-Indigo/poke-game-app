@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getUserPokemonsService, getRandomPokemonService, postSavePokemonService, deletePokemonService, postRegisterHealUseService, postResetHealsService, postWinBattleService } from '../services/pokemonService';
+import { getRandomPokemonService, postSavePokemonService, deletePokemonService, postRegisterHealUseService, postResetHealsService, postWinBattleService, getMyPokemonTeamService } from '../services/pokemonService';
 import HealthBar from '../components/reutilizables/HealthBar';
 import { useAuth } from '../context/AuthContext';
 import { calculateTurnDetails } from '../utils/BattlePokemonUtils';
@@ -9,7 +9,6 @@ import { GiPotionBall } from 'react-icons/gi';
 
 function BattlePokemon() {
   const { user, setUser } = useAuth();
-  const [userPokemons, setUserPokemons] = useState([]);
   const [playerPokemon, setPlayerPokemon] = useState(null);
   const [opponentPokemon, setOpponentPokemon] = useState(null);
   const [playerCurrentHp, setPlayerCurrentHp] = useState(0);
@@ -38,18 +37,23 @@ function BattlePokemon() {
   useEffect(() => { // Preparar la batalla al cargar el componente
     const setupBattle = async () => {
       try {
-        const [pokemons, opponent] = await Promise.all([
-          getUserPokemonsService(),
+        const [myTeam, opponent] = await Promise.all([
+          getMyPokemonTeamService(),
           getRandomPokemonService(),
         ]);
 
-        if (pokemons.length === 0) {
-          setError('No tienes Pokémon para luchar. ¡Ve a capturar algunos!');
+        if (myTeam.length === 0) {
+          setError('No tienes un equipo configurado. Redirigiendo...');
+          setTimeout(() => navigate('/my-team'), 2000);
           return;
         }
 
-        setUserPokemons(pokemons);
+        const leader = myTeam[0];
+        setPlayerPokemon(leader);
+        setPlayerCurrentHp(leader.hp);
         setOpponentPokemon(opponent);
+        setOpponentCurrentHp(opponent.hp);
+        setBattleLog('¡La batalla ha comenzado!');
       } catch (err) {
         setError('No se pudo preparar la batalla. ' + err.message);
       } finally {
@@ -137,13 +141,6 @@ function BattlePokemon() {
     return () => clearInterval(battleInterval);
   }, [playerPokemon, opponentPokemon, playerCurrentHp, opponentCurrentHp, isBattleOver]);
 
-  const handleSelectPokemon = (pokemon) => {
-    setPlayerPokemon(pokemon);
-    setPlayerCurrentHp(pokemon.hp);
-    setOpponentCurrentHp(opponentPokemon.hp);
-    setBattleLog('¡La batalla ha comenzado!');
-  };
-
   const handleHeal = () => {
     const canHeal = (user.curas_restantes - healsUsed.current) > 0;
 
@@ -173,27 +170,9 @@ function BattlePokemon() {
     }
   };
 
-
   if (loading) return <p>Preparando la batalla...</p>;
   if (error) return <p className="text-poke-red">{error}</p>;
-
-  // Si el jugador aún no ha elegido un Pokémon, muestra la pantalla de selección.
-  if (!playerPokemon) {
-    return (
-      <div>
-        <h1 className="text-3xl font-bold mb-6">Elige tu luchador</h1>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {userPokemons.map((p) => (
-            <div key={p.id} onClick={() => handleSelectPokemon(p)} className="bg-gray-800 p-4 rounded-lg cursor-pointer hover:border-poke-yellow border-2 border-transparent transition-all">
-              <img src={p.sprite_url} alt={p.name} className="mx-auto h-24 w-24" />
-              <p className="text-center font-bold text-poke-yellow mt-2">{p.name}</p>
-              {p.nickname && <p className="text-center text-sm italic">"{p.nickname}"</p>}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  if (!playerPokemon || !opponentPokemon) return <p>Cargando batalla...</p>; // Estado intermedio
 
   // Una vez que se elige un Pokémon, muestra la pantalla de batalla.
   return (

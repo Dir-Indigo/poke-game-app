@@ -78,3 +78,23 @@ export const postWinBattleService = async (pokemonId) => {
     throw new Error(error.response?.data?.detail || 'No se pudo registrar la victoria en batalla.');
   }
 };
+
+export const getMyPokemonTeamService = async () => {
+  try {
+    const response = await djangoApi.get('/players/list-my-team/');
+    return response.data;
+  } catch (error) {
+    console.error("Error al obtener el equipo de Pokémon del usuario:", error.response?.data || error.message);
+    throw new Error(error.response?.data?.detail || 'No se pudo cargar tu equipo de Pokémon.');
+  }
+};
+
+export const postSetPokemonTeamService = async (teamIdList) => {
+  try {
+    const response = await djangoApi.post('/players/my-team/', { pokemon_ids: teamIdList });
+    return response.data;
+  } catch (error) {
+    console.error("Error al establecer el equipo de Pokémon:", error.response?.data || error.message);
+    throw new Error(error.response?.data?.detail || 'No se pudo establecer el equipo de Pokémon.');
+  }
+};

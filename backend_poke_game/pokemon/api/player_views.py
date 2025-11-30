@@ -4,8 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
-from pokemon.models import Player
-
+from pokemon.models import Player, Pokemon
 
 class PlayerSeriaizer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True);
@@ -58,3 +57,32 @@ class PlayerViewSet(viewsets.ModelViewSet):
             player = serializer.save()
             return Response(self.get_serializer(player).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+    # TEAM
+    @action(detail=False, methods=['get'], url_path='list-my-team')
+    def get_team(self, request):
+        from pokemon.api.pokemon_views import PokemonSeriaizer
+        player = request.user
+        team = player.team.order_by('id')  # Ordenar por ID para mantener consistencia
+        serializer = PokemonSeriaizer(team, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['post'], url_path='my-team')
+    def set_team(self, request):
+        player = request.user
+        pokemon_ids = request.data.get('pokemon_ids', [])
+
+        if not isinstance(pokemon_ids, list) or len(pokemon_ids) > 4:
+            return Response({"error": "Debes enviar una lista de hasta 4 IDs de Pokémon."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        pokemons = Pokemon.objects.filter(id__in=pokemon_ids, owner=player)
+        if pokemons.count() != len(pokemon_ids):
+            return Response({"error": "Algunos Pokémon no existen o no te pertenecen."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        player.set_team(pokemon_ids)
+        return Response({"status": "Equipo actualizado correctamente."})
+

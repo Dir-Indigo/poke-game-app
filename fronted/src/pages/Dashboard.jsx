@@ -122,7 +122,7 @@ function Dashboard() {
           <span> : <span className="font-bold text-white">{user?.curas_restantes}</span></span>
         </div>
         <div className="mt-8 w-full">
-          <Link to="/pokemons">
+          <Link to="/pokemonteam">
             <RegularButton>¡A Jugar!</RegularButton>
           </Link>
         </div>

@@ -25,7 +25,7 @@ function Header() {
         </Link>
         <nav className="flex gap-6">
           {user && (
-            <Link to="/pokemons" className="text-lg font-bold no-underline hover:text-poke-yellow transition-colors">
+            <Link to="/pokemonteam" className="text-lg font-bold no-underline hover:text-poke-yellow transition-colors">
               Mis Pokémon
             </Link>
           )}

@@ -3,6 +3,7 @@ import { AuthProvider } from "./context/AuthContext";
 import Login from "./pages/Login";
 import BattlePokemon from "./pages/BattlePokemon";
 import Dashboard from "./pages/Dashboard";
+import MyPokemonTeam from "./pages/MyPokemonTeam";
 import NotFound from "./pages/NotFound";
 import './App.css'
 import Header from "./components/header";
@@ -15,8 +16,9 @@ function App() {
         <main className="pt-24 max-w-7xl mx-auto p-8 text-center">
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route path="/pokemons" element={<BattlePokemon />} />
+            <Route path="/battle" element={<BattlePokemon />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/pokemonTeam" element={<MyPokemonTeam />} />
             <Route path="/" element={<Navigate to="/dashboard" />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
