@@ -1,0 +1,6 @@
+# Ignorar base de datos local
+db.sqlite3
+
+# Ignorar migraciones de Django
+*/migrations/*
+!*/migrations/__init__.py
