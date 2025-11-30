@@ -8,35 +8,54 @@ export function useAuth() {
 }
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
+  const [user, setUserState] = useState(null);
+
   useEffect(() => {
-    // Solo intentamos cargar desde localStorage si el usuario no está ya en el estado.
-    if (!user) {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        const userData = JSON.parse(storedUser);
-        setUser({
-          ...userData,
-          curas_restantes: userData.heals,
-        });
-      }
+    const storedUser = localStorage.getItem('user');
+    if (storedUser && !user) {
+      const userData = JSON.parse(storedUser);
+      setUserState({
+        ...userData,
+        curas_restantes: userData.heals,
+      });
     }
-  }, [user]); // Ahora depende de 'user' para evitar la recarga si ya existe.
+  }, [user]);
 
-  // Creamos una función para actualizar el usuario que también actualiza localStorage
+  // Función segura para actualizar usuario
   const updateUser = (newUserData) => {
-    // Actualizamos el estado de React
-    setUser(newUserData);
+    if (!newUserData) {
+      // LOGOUT CASE
+      setUserState(null);
+      localStorage.removeItem('user');
+      return;
+    }
 
-    // Actualizamos también el localStorage para que los datos persistan
-    const storedUser = JSON.parse(localStorage.getItem('user')) || {};
-    const updatedStoredUser = { ...storedUser, ...newUserData, heals: newUserData.curas_restantes };
+    const updatedStoredUser = {
+      ...newUserData,
+      heals: newUserData.curas_restantes,
+    };
+
+    setUserState(updatedStoredUser);
     localStorage.setItem('user', JSON.stringify(updatedStoredUser));
   };
 
-  // Exponemos la nueva función 'updateUser' en lugar de 'setUser' directamente.
-  // Mantenemos setUser por si se necesita en algún otro lugar, pero es mejor usar updateUser.
-  const value = { user, setUser: updateUser, updateUser };
+  const logoutUser = () => {
+    setUserState(null);
+    localStorage.removeItem('user');
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+  };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        setUser: updateUser,
+        updateUser,
+        logoutUser,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 }

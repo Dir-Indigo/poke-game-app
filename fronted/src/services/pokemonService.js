@@ -20,7 +20,7 @@ export const getRandomPokemonService = async () => {
   }
 };
 
-export const savePokemonService = async (poke_id) => {
+export const postSavePokemonService = async (poke_id) => {
   try {
     const response = await djangoApi.post('/pokemon/', { poke_id });
     return response.data;
@@ -30,7 +30,7 @@ export const savePokemonService = async (poke_id) => {
   }
 };
 
-export const updatePokemonNicknameService = async (pokemonId, nickname) => {
+export const patchUpdatePokemonNicknameService = async (pokemonId, nickname) => {
   try {
     const response = await djangoApi.patch(`/pokemon/${pokemonId}/nickname/`, { nickname });
     return response.data;
@@ -49,7 +49,7 @@ export const deletePokemonService = async (pokemonId) => {
   }
 };
 
-export const registerHealUseService = async () => {
+export const postRegisterHealUseService = async () => {
   try {
     const response = await djangoApi.post('/players/use-heal/', {});
     return response.data;
@@ -59,7 +59,7 @@ export const registerHealUseService = async () => {
   }
 };
 
-export const resetHealsService = async () => {
+export const postResetHealsService = async () => {
   try {
     const response = await djangoApi.post('/players/reset-heals/', {});
     return response.data;
@@ -69,4 +69,32 @@ export const resetHealsService = async () => {
   }
 };
 
+export const postWinBattleService = async (pokemonId) => {
+  try {
+  const response = await djangoApi.post(`/pokemon/${pokemonId}/win/`, {});
+  return response.data;
+  } catch (error) {
+    console.error("Error al registrar la victoria en batalla:", error.response?.data || error.message);
+    throw new Error(error.response?.data?.detail || 'No se pudo registrar la victoria en batalla.');
+  }
+};
 
+export const getMyPokemonTeamService = async () => {
+  try {
+    const response = await djangoApi.get('/players/list-my-team/');
+    return response.data;
+  } catch (error) {
+    console.error("Error al obtener el equipo de Pokémon del usuario:", error.response?.data || error.message);
+    throw new Error(error.response?.data?.detail || 'No se pudo cargar tu equipo de Pokémon.');
+  }
+};
+
+export const postSetPokemonTeamService = async (teamIdList) => {
+  try {
+    const response = await djangoApi.post('/players/my-team/', { pokemon_ids: teamIdList });
+    return response.data;
+  } catch (error) {
+    console.error("Error al establecer el equipo de Pokémon:", error.response?.data || error.message);
+    throw new Error(error.response?.data?.detail || 'No se pudo establecer el equipo de Pokémon.');
+  }
+};

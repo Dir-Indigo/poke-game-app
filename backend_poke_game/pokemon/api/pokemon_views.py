@@ -13,17 +13,20 @@ class PokemonSeriaizer(serializers.ModelSerializer):
         read_only_fields = ['owner', 'caught_at']
 
 
+MAX_LEVEL = 50
+
+
 class PokemonViewSet(viewsets.ModelViewSet):
     queryset = Pokemon.objects.all()
     serializer_class = PokemonSeriaizer
     permission_classes = [IsAuthenticated]
-    
+
     def get_queryset(self):
         return Pokemon.objects.filter(owner=self.request.user)
 
     def create(self, request, *args, **kwargs):
         player = request.user
-        
+
         if player.pokemon.count() >= 10:
             return Response({"error": "You can only have 10 Pokémon in your team!"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -46,13 +49,13 @@ class PokemonViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(pokemon)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    
+
     def destroy(self, request, *args, **kwargs):
         pokemon = self.get_object()
         if pokemon.owner != request.user:
             return Response({"error": "You can only delete your own Pokémon."}, status=status.HTTP_403_FORBIDDEN)
         return super().destroy(request, *args, **kwargs)
-    
+
     @action(detail=True, methods=['patch'], url_path='nickname')
     def update_nickname(self, request, pk=None):
         pokemon = self.get_object()
@@ -73,6 +76,25 @@ class PokemonViewSet(viewsets.ModelViewSet):
             return Response({"error": "Could not fetch Pokémon from PokeAPI."}, status=status.HTTP_400_BAD_REQUEST)
         return Response(poke_data)
 
+    @action(detail=True, methods=['post'], url_path='win')
+    def win_battle(self, request, pk=None):
+        pokemon = self.get_object()
+        if pokemon.owner != request.user:
+            return Response({"error": "You can only upgrade your own Pokémon."}, status=status.HTTP_403_FORBIDDEN)
+
+        divisor = 30
+        # Only increase stats if not at max level
+        if pokemon.level < MAX_LEVEL:
+            pokemon.hp += 3
+            pokemon.attack += 5
+            pokemon.defense += 5
+            pokemon.level = min(MAX_LEVEL, max(1, (pokemon.hp + pokemon.attack + pokemon.defense) // divisor))
+            pokemon.save()
+            serializer = self.get_serializer(pokemon)
+            return Response(serializer.data)
+        else:
+            return Response({"message": "Pokémon is already at max level."}, status=status.HTTP_200_OK)
+
 
 def fetch_pokemon_data(poke_id=None, randomize=False):
     if randomize:
@@ -87,13 +109,44 @@ def fetch_pokemon_data(poke_id=None, randomize=False):
     stats = {s["stat"]["name"]: s["base_stat"] for s in data["stats"]}
     types = [t["type"]["name"].capitalize() for t in data["types"]]
 
+    hp = stats.get("hp", 50) * 5
+    attack = stats.get("attack", 50)
+    defense = stats.get("defense", 50)
+
+    # Nivel
+    divisor = 30
+    level = min(MAX_LEVEL, max(1, (hp + attack + defense) // divisor))
+
+    abilities = data.get("abilities", [])
+
+    # Obtener nombres
+    special1_name = (
+        abilities[0]["ability"]["name"].replace("-", " ").capitalize()
+        if len(abilities) > 0 else "Special Move 1"
+    )
+
+    special2_name = (
+        abilities[1]["ability"]["name"].replace("-", " ").capitalize()
+        if len(abilities) > 1 else "Special Move 2"
+    )
+
+    # Poder del ataque especial (2x y 1.6x por ejemplo)
+    special1_power = int(attack * 2)
+    special2_power = int(attack * 1.6)
+
     return {
         "poke_id": data["id"],
         "name": data["name"].capitalize(),
-        "hp": stats.get("hp", 50) * 5,
-        "attack": stats.get("attack", 50),
-        "defense": stats.get("defense", 50),
+        "hp": hp,
+        "attack": attack,
+        "defense": defense,
         "sprite_url": data["sprites"]["front_default"],
         "back_sprite_url": data["sprites"]["back_default"],
         "types": types,
+        "level": level,
+
+        "special1_name": special1_name,
+        "special1_power": special1_power,
+        "special2_name": special2_name,
+        "special2_power": special2_power,
     }
