@@ -6,7 +6,7 @@ import Dashboard from "./pages/Dashboard";
 import MyPokemonTeam from "./pages/MyPokemonTeam";
 import NotFound from "./pages/NotFound";
 import './App.css'
-import Header from "./components/header";
+import Header from "./components/Header";
 import PrivateRoute from "./components/PrivateRoute";
 
 function App() {
