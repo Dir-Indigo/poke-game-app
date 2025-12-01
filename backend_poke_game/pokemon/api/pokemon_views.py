@@ -141,6 +141,41 @@ class PokemonViewSet(viewsets.ModelViewSet):
             )
 
     # ======================================================
+    #         ENDPOINT PARA REGISTRAR BATALLA
+    # ======================================================
+    @action(detail=True, methods=['post'], url_path='battle-result')
+    def battle_result(self, request, pk=None):
+        """
+        Registra si un Pokémon ganó o perdió una batalla.
+        
+        payload esperado:
+        { "result": "win" }  o  { "result": "lose" }
+        """
+        pokemon = self.get_object()
+        player = pokemon.owner
+        result = request.data.get("result")
+
+        if result not in ["win", "lose"]:
+            return Response(
+                {"error": "result must be 'win' or 'lose'"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # SIEMPRE se suma un use
+        pokemon.add_use()
+        player.uses += 1
+
+        # Si ganó
+        if result == "win":
+            pokemon.add_win()
+            player.wins += 1
+
+        pokemon.save()
+        player.save()
+
+        return Response({"status": f"battle '{result}' recorded"})
+
+    # ======================================================
     #              ESTADÍSTICAS DEL JUGADOR
     # ======================================================
 
