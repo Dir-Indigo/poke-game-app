@@ -132,6 +132,16 @@ function BattlePokemon() {
         await postBattleResultService(playerPokemon.id, battleResult);
 
         if (battleResult === "win") {
+
+          // RESET DE CURACIONES EN BACKEND
+          try {
+              await postResetHealsService();
+              setHeals(3); // O el valor que uses como máximo
+          } catch (err) {
+              console.error("Error al resetear curaciones:", err);
+          }
+
+          // Obtener versión real con wins y uses actualizados
           const res = await djangoApi.get(`/pokemon/${playerPokemon.id}/`);
           const updated = res.data;
 
@@ -141,7 +151,8 @@ function BattlePokemon() {
             defense: updated.defense - playerPokemon.defense,
             level: updated.level
           });
-        }
+      }
+
       } catch (err) {
         console.error("Error finalizando batalla:", err);
       }
@@ -320,7 +331,10 @@ function BattlePokemon() {
       await postSavePokemonService(pokeId);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message + ' No puedes tener más de 10 pokemones :c');
+      const backendMessage = err.response?.data?.detail 
+        || "Tu inventario está lleno. No puedes capturar más Pokémon.";
+
+      setError(backendMessage);
     }
   };
 

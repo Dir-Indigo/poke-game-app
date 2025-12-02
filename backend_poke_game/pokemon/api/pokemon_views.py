@@ -4,6 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from pokemon.models import Pokemon
+from rest_framework.exceptions import ValidationError
 
 MAX_LEVEL = 100
 
@@ -24,15 +25,18 @@ class PokemonViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         player = request.user
 
+        # --- Límite de 10 pokemones ---
         if player.pokemon.count() >= 10:
-            return Response({"error": "You can only have 10 Pokémon"}, status=400)
+            raise ValidationError({
+                "detail": "Tu inventario está lleno. Solo puedes tener 10 Pokémon."
+            })
 
         poke_id = request.data.get("poke_id")
         raw_nickname = request.data.get("nickname")
         nickname = raw_nickname.strip() if isinstance(raw_nickname, str) else None
 
         if not poke_id:
-            return Response({"error": "poke_id required"}, status=400)
+            raise ValidationError({"detail": "poke_id requerido"})
 
         poke_data = fetch_pokemon_data(poke_id)
         pokemon = Pokemon.objects.create(owner=player, nickname=nickname, **poke_data)
