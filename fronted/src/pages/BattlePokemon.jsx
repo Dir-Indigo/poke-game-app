@@ -1,7 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {getRandomPokemonService, postSavePokemonService, deletePokemonService, postRegisterHealUseService, postResetHealsService, postWinBattleService, getMyPokemonTeamService} 
-from '../services/pokemonService';
+
+import {
+  getRandomGroupPokemonService,
+  postSavePokemonService,
+  postBattleResultService,
+  postRegisterHealUseService,
+  postResetHealsService,
+  getMyPokemonTeamService
+} from '../services/pokemonService';
+
 import HealthBar from '../components/reutilizables/HealthBar';
 import { useAuth } from '../context/AuthContext';
 import RegularButton from '../components/reutilizables/RegularButton';
@@ -21,8 +29,6 @@ function BattlePokemon() {
   const [isBattleOver, setIsBattleOver] = useState(false);
   const [battleResult, setBattleResult] = useState(null);
 
-  const [statIncreases, setStatIncreases] = useState(null);
-
   const [damageInfo, setDamageInfo] = useState({ player: null, opponent: null });
   const [showHit, setShowHit] = useState({ player: false, opponent: false });
 
@@ -40,7 +46,7 @@ function BattlePokemon() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // TIMER COOLDOWN
+  // TIMER
   useEffect(() => {
     const timer = setInterval(() => {
       setCooldown(prev => ({
@@ -67,9 +73,9 @@ function BattlePokemon() {
       hasProcessedEnd.current = false;
 
       try {
-        const [myTeam, opponent] = await Promise.all([
+        const [myTeam, group] = await Promise.all([
           getMyPokemonTeamService(),
-          getRandomPokemonService(),
+          getRandomGroupPokemonService(),
         ]);
 
         if (myTeam.length === 0) {
@@ -79,16 +85,17 @@ function BattlePokemon() {
         }
 
         const leader = myTeam[0];
-
         setPlayerPokemon(leader);
         setPlayerCurrentHp(leader.hp);
 
-        setOpponentPokemon(opponent);
-        setOpponentCurrentHp(opponent.hp);
+        const enemy = group.pokemons[0];
+        setOpponentPokemon(enemy);
+        setOpponentCurrentHp(enemy.hp);
 
         setBattleLog('¡La batalla ha comenzado!');
       } catch (err) {
-        setError('No se pudo preparar la batalla. ' + err.message);
+        console.error(err);
+        setError('No se pudo preparar la batalla.');
       } finally {
         setLoading(false);
       }
@@ -99,48 +106,46 @@ function BattlePokemon() {
 
   // END BATTLE HANDLER
   useEffect(() => {
-    if (!isBattleOver) return;
-    if (hasProcessedEnd.current) return;
+    if (!isBattleOver || hasProcessedEnd.current) return;
 
     hasProcessedEnd.current = true;
 
-    const handleEndBattle = async () => {
+    const endBattleLogic = async () => {
       try {
         if (battleResult === 'win') {
           const updatedUser = await postResetHealsService();
-          const updatedPokemonStats = await postWinBattleService(playerPokemon.id);
-
-          setStatIncreases({
-            hp: updatedPokemonStats.hp - playerPokemon.hp,
-            attack: updatedPokemonStats.attack - playerPokemon.attack,
-            defense: updatedPokemonStats.defense - playerPokemon.defense,
-            level: updatedPokemonStats.level,
-          });
+          await postBattleResultService(playerPokemon.id, "win");
 
           setUser({
             ...user,
             curas_restantes: updatedUser.heals,
           });
-        } else if (battleResult === 'lose' && healsUsed.current > 0) {
-          let finalUpdatedUser = null;
 
-          for (let i = 0; i < healsUsed.current; i++) {
-            finalUpdatedUser = await postRegisterHealUseService();
-          }
+        } else if (battleResult === 'lose') {
+          await postBattleResultService(playerPokemon.id, "lose");
 
-          if (finalUpdatedUser) {
-            setUser({
-              ...user,
-              curas_restantes: finalUpdatedUser.heals_left,
-            });
+          if (healsUsed.current > 0) {
+            let updatedUser = null;
+
+            for (let i = 0; i < healsUsed.current; i++) {
+              updatedUser = await postRegisterHealUseService();
+            }
+
+            if (updatedUser) {
+              setUser({
+                ...user,
+                curas_restantes: updatedUser.heals_left,
+              });
+            }
           }
         }
       } catch (err) {
-        console.error('Error al procesar la batalla:', err);
+        console.error("Error en manejo final de batalla:", err);
       }
     };
 
-    handleEndBattle();
+    endBattleLogic();
+
   }, [isBattleOver, battleResult, playerPokemon, user, setUser]);
 
   // HEAL
@@ -148,6 +153,7 @@ function BattlePokemon() {
     if (!user || !playerPokemon) return;
 
     const canHeal = user.curas_restantes - healsUsed.current > 0;
+
     if (canHeal && playerCurrentHp > 0 && !isBattleOver) {
       setPlayerCurrentHp(prev => Math.min(playerPokemon.hp, prev + 50));
       setHeals(prev => prev - 1);
@@ -165,40 +171,38 @@ function BattlePokemon() {
 
     if (type === 'normal') {
       if (cooldown.normal > 0) return;
-      setCooldown(prev => ({ ...prev, normal: 1 }));
       name = 'Ataque Normal';
+      setCooldown(prev => ({ ...prev, normal: 1 }));
     }
 
     if (type === 'special1') {
       if (cooldown.special1 > 0) return;
-      power = playerPokemon.special1_power || playerPokemon.attack * 1.2;
-      name = playerPokemon.special1_name || 'Ataque Especial 1';
+      power = playerPokemon.special1_power || power * 1.2;
+      name = playerPokemon.special1_name;
       setCooldown(prev => ({ ...prev, special1: 5 }));
     }
 
     if (type === 'special2') {
       if (cooldown.special2 > 0) return;
-      power = playerPokemon.special2_power || playerPokemon.attack * 1.5;
-      name = playerPokemon.special2_name || 'Ataque Especial 2';
+      power = playerPokemon.special2_power || power * 1.5;
+      name = playerPokemon.special2_name;
       setCooldown(prev => ({ ...prev, special2: 8 }));
     }
 
-    const playerForDamage = {
-      ...playerPokemon,
-      attack: power,
-    };
+    const playerForDamage = { ...playerPokemon, attack: power };
 
     const {
       finalPlayerDamage,
       finalOpponentDamage,
       playerDamageBreakdown,
-      opponentDamageBreakdown,
+      opponentDamageBreakdown
     } = calculateTurnDetails(playerForDamage, opponentPokemon);
 
     setDamageInfo({
       player: playerDamageBreakdown,
       opponent: opponentDamageBreakdown,
     });
+
     setShowHit({ player: true, opponent: true });
 
     setTimeout(() => {
@@ -206,27 +210,28 @@ function BattlePokemon() {
       setDamageInfo({ player: null, opponent: null });
     }, 900);
 
-    const newOpponentHp = Math.max(0, opponentCurrentHp - finalOpponentDamage);
+    const newEnemyHp = Math.max(0, opponentCurrentHp - finalOpponentDamage);
     const newPlayerHp = Math.max(0, playerCurrentHp - finalPlayerDamage);
 
-    setOpponentCurrentHp(newOpponentHp);
+    setOpponentCurrentHp(newEnemyHp);
 
-    if (newOpponentHp === 0) {
+    if (newEnemyHp === 0) {
       setIsBattleOver(true);
-      setBattleResult('win');
-      setBattleLog(`¡${playerPokemon.nickname || playerPokemon.name} derrotó a ${opponentPokemon.name} con ${name}!`);
+      setBattleResult("win");
+      setBattleLog(`¡${playerPokemon.name} derrotó a ${opponentPokemon.name} con ${name}!`);
       return;
     }
 
-    setBattleLog(`¡${playerPokemon.nickname || playerPokemon.name} usó ${name}!`);
+    setBattleLog(`¡${playerPokemon.name} usó ${name}!`);
 
     setTimeout(() => {
       if (isBattleOver) return;
+
       setPlayerCurrentHp(newPlayerHp);
 
       if (newPlayerHp === 0) {
         setIsBattleOver(true);
-        setBattleResult('lose');
+        setBattleResult("lose");
         setBattleLog(`¡${opponentPokemon.name} contraatacó y derrotó a tu Pokémon!`);
       } else {
         setBattleLog(`¡${opponentPokemon.name} contraatacó!`);
@@ -234,21 +239,13 @@ function BattlePokemon() {
     }, 700);
   };
 
+  // CAPTURE
   const handleCapture = async () => {
     try {
       await postSavePokemonService(opponentPokemon.poke_id);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message + ' No puedes tener más de 10 pokemones :c');
-    }
-  };
-
-  const handleDefeat = async () => {
-    try {
-      await deletePokemonService(playerPokemon.id);
-      navigate('/dashboard');
-    } catch (err) {
-      setError('Error al procesar la derrota. ' + err.message);
+      setError(err.message || "No puedes tener más de 10 pokémon.");
     }
   };
 
@@ -256,6 +253,7 @@ function BattlePokemon() {
   if (error) return <p className="text-poke-red">{error}</p>;
   if (!playerPokemon || !opponentPokemon) return <p>Cargando batalla...</p>;
 
+  // UI FINAL
   return (
     <div
       className="bg-cover bg-center p-6 rounded-2xl border-4 border-gray-900 shadow-2xl relative mx-auto w-full max-w-[1100px] min-h-[550px] flex flex-col justify-between"
@@ -266,34 +264,20 @@ function BattlePokemon() {
 
       {isBattleOver && (
         <div className="absolute inset-0 bg-black bg-opacity-75 flex flex-col justify-center items-center z-30 p-4 text-center">
+
           {battleResult === 'win' ? (
             <>
-              <h2 className="text-3xl md:text-4xl font-bold text-poke-yellow mb-4">
-                ¡VICTORIA!
-              </h2>
-
-              {statIncreases && (
-                <div className="text-white mb-4 p-3 bg-black bg-opacity-50 rounded-lg text-sm md:text-base">
-                  <h3 className="font-bold text-poke-yellow">¡Tu Pokémon se fortaleció!</h3>
-                  {statIncreases.level > playerPokemon.level && (
-                    <p className="text-lg text-green-400 font-bold animate-pulse">
-                      ¡Subió al nivel {statIncreases.level}!
-                    </p>
-                  )}
-                  <p>HP: {playerPokemon.hp} + {statIncreases.hp}</p>
-                  <p>Ataque: {playerPokemon.attack} + {statIncreases.attack}</p>
-                  <p>Defensa: {playerPokemon.defense} + {statIncreases.defense}</p>
-                </div>
-              )}
+              <h2 className="text-4xl font-bold text-poke-yellow mb-4">¡VICTORIA!</h2>
 
               <p className="text-lg text-white mb-6">
                 ¿Quieres capturar a {opponentPokemon.name}?
               </p>
 
-              <div className="flex gap-4 flex-wrap justify-center">
+              <div className="flex gap-4">
                 <RegularButton onClick={handleCapture} className="bg-green-600 hover:bg-green-700">
                   Capturar
                 </RegularButton>
+
                 <RegularButton onClick={() => navigate('/dashboard')} className="bg-gray-600 hover:bg-gray-700">
                   Dejarlo ir
                 </RegularButton>
@@ -301,96 +285,91 @@ function BattlePokemon() {
             </>
           ) : (
             <>
-              <h2 className="text-3xl md:text-4xl font-bold text-poke-red mb-4">
-                DERROTA...
-              </h2>
+              <h2 className="text-4xl font-bold text-poke-red mb-4">DERROTA...</h2>
+
               <p className="text-lg text-white mb-6">
-                Tu Pokémon, {playerPokemon.name}, ha sido derrotado.
+                Tu Pokémon {playerPokemon.name} ha sido derrotado.
               </p>
-              <RegularButton onClick={handleDefeat}>Volver al Dashboard</RegularButton>
+
+              <RegularButton onClick={() => navigate('/dashboard')}>
+                Volver al Dashboard
+              </RegularButton>
             </>
           )}
+
           {error && <p className="text-poke-red mt-4">{error}</p>}
         </div>
       )}
 
+      {/* Animación de golpes */}
       {showHit.opponent && (
         <img
           src="https://img.itch.zone/aW1nLzk3OTkzMDYuZ2lm/original/p78Kg1.gif"
           alt="Golpe"
-          className="absolute top-16 md:top-20 left-1/2 ml-6 md:ml-10 h-20 w-20 md:h-32 md:w-32 z-20"
+          className="absolute top-16 left-1/2 ml-10 h-28 w-28 z-20"
         />
       )}
-
       {showHit.player && (
         <img
           src="https://img.itch.zone/aW1nLzk3OTkzMDYuZ2lm/original/p78Kg1.gif"
           alt="Golpe"
-          className="absolute bottom-20 md:bottom-24 right-1/2 mr-6 md:mr-10 h-20 w-20 md:h-32 md:w-32 z-20 transform -scale-x-100"
+          className="absolute bottom-24 right-1/2 mr-10 h-28 w-28 z-20 transform -scale-x-100"
         />
       )}
 
+      {/* Daños */}
       {damageInfo.opponent && (
-        <div
-          className="absolute top-20 md:top-24 left-1/2 ml-8 md:ml-16 text-2xl md:text-4xl font-bold text-white flex items-center"
-          style={{ textShadow: '2px 2px 4px #000000' }}
-        >
-          <span>-{damageInfo.opponent.base}</span>
-          {damageInfo.opponent.extra !== 0 && (
-            <span className={`ml-2 text-xl md:text-2xl ${damageInfo.opponent.extra > 0 ? 'text-green-400' : 'text-red-400'}`}>
-              ({damageInfo.opponent.extra > 0 ? '+' : ''}{damageInfo.opponent.extra})
-            </span>
-          )}
+        <div className="absolute top-24 left-1/2 ml-16 text-3xl font-bold text-white">
+          -{damageInfo.opponent.base}
         </div>
       )}
 
       {damageInfo.player && (
-        <div
-          className="absolute bottom-24 md:bottom-28 right-1/2 mr-8 md:mr-16 text-2xl md:text-4xl font-bold text-white flex items-center"
-          style={{ textShadow: '2px 2px 4px #000000' }}
-        >
-          <span>-{damageInfo.player.base}</span>
-          {damageInfo.player.extra !== 0 && (
-            <span className={`ml-2 text-xl md:text-2xl ${damageInfo.player.extra > 0 ? 'text-green-400' : 'text-red-400'}`}>
-              ({damageInfo.player.extra > 0 ? '+' : ''}{damageInfo.player.extra})
-            </span>
-          )}
+        <div className="absolute bottom-28 right-1/2 mr-16 text-3xl font-bold text-white">
+          -{damageInfo.player.base}
         </div>
       )}
 
-      <div className="flex justify-between items-end h-64 md:h-80 relative">
+      {/* Pokémon */}
+      <div className="flex justify-between items-end h-80 relative">
 
-        <div className="flex flex-col items-end w-1/2 pr-4 md:pr-10">
+        {/* PLAYER */}
+        <div className="flex flex-col items-end w-1/2 pr-10">
           <img
             src={playerPokemon.back_sprite_url || playerPokemon.sprite_url}
             alt={playerPokemon.name}
-            className="h-32 w-32 md:h-48 md:w-48"
+            className="h-40 w-40"
           />
 
-          <div className="bg-gray-200 p-2 rounded-lg border-4 border-gray-900 w-40 md:w-64 text-left -mt-6 md:-mt-8">
-            <div className="flex justify-between items-center">
-              <h3 className="text-sm md:text-lg font-bold text-gray-800">
-                {playerPokemon.nickname || playerPokemon.name} LV{playerPokemon.level}
+          <div className="bg-gray-200 text-black p-2 rounded-lg border-4 border-gray-900 w-64 text-left -mt-8">
+            <div className="flex justify-between">
+              <h3 className="font-bold text-black">
+                {playerPokemon.name} LV{playerPokemon.level}
               </h3>
-              <p className="text-gray-600 font-semibold">HP</p>
+              <p className="text-black">HP</p>
             </div>
+
             <HealthBar currentHp={playerCurrentHp} maxHp={playerPokemon.hp} />
-            <p className="text-right text-gray-800 font-bold text-xs md:text-base">
+
+            <p className="text-right font-bold text-black">
               {playerCurrentHp}/{playerPokemon.hp}
             </p>
           </div>
         </div>
 
-        <div className="flex flex-col items-start w-1/2 pl-4 md:pl-10">
-          <div className="bg-gray-200 p-2 rounded-lg border-4 border-gray-900 w-40 md:w-64 text-left mb-2">
-            <div className="flex justify-between items-center">
-              <h3 className="text-sm md:text-lg font-bold text-gray-800">
+        {/* OPPONENT */}
+        <div className="flex flex-col items-start w-1/2 pl-10">
+          <div className="bg-gray-200 text-black p-2 rounded-lg border-4 border-gray-900 w-64 text-left mb-2">
+            <div className="flex justify-between">
+              <h3 className="font-bold text-black">
                 {opponentPokemon.name} LV{opponentPokemon.level}
               </h3>
-              <p className="text-gray-600 font-semibold">HP</p>
+              <p className="text-black">HP</p>
             </div>
+
             <HealthBar currentHp={opponentCurrentHp} maxHp={opponentPokemon.hp} />
-            <p className="text-right text-gray-800 font-bold text-xs md:text-base">
+
+            <p className="text-right font-bold text-black">
               {opponentCurrentHp}/{opponentPokemon.hp}
             </p>
           </div>
@@ -398,20 +377,16 @@ function BattlePokemon() {
           <img
             src={opponentPokemon.sprite_url}
             alt={opponentPokemon.name}
-            className="h-24 w-24 md:h-40 md:w-40"
+            className="h-40 w-40"
           />
         </div>
-
       </div>
 
-      <div
-        className="bg-gray-200 border-4 border-gray-900 rounded-lg mt-4 p-3 md:p-4 flex flex-col gap-3"
-      >
-        <p className="text-gray-800 text-lg md:text-2xl font-bold text-center">
-          {battleLog}
-        </p>
+      {/* BOTONES */}
+      <div className="bg-gray-200 border-4 border-gray-900 rounded-lg mt-4 p-4">
+        <p className="text-center text-2xl font-bold mb-3 text-black">{battleLog}</p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-[600px] mx-auto text-xs md:text-base">
+        <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
           <RegularButton
             onClick={() => handleAttack('normal')}
             disabled={cooldown.normal > 0 || isBattleOver}
@@ -423,14 +398,14 @@ function BattlePokemon() {
             onClick={() => handleAttack('special1')}
             disabled={cooldown.special1 > 0 || isBattleOver}
           >
-            {playerPokemon.special1_name || 'Ataque Especial 1'} {cooldown.special1 > 0 && `(${cooldown.special1}s)`}
+            {playerPokemon.special1_name} {cooldown.special1 > 0 && `(${cooldown.special1}s)`}
           </RegularButton>
 
           <RegularButton
             onClick={() => handleAttack('special2')}
             disabled={cooldown.special2 > 0 || isBattleOver}
           >
-            {playerPokemon.special2_name || 'Ataque Especial 2'} {cooldown.special2 > 0 && `(${cooldown.special2}s)`}
+            {playerPokemon.special2_name} {cooldown.special2 > 0 && `(${cooldown.special2}s)`}
           </RegularButton>
 
           <RegularButton
@@ -441,6 +416,7 @@ function BattlePokemon() {
           </RegularButton>
         </div>
       </div>
+
     </div>
   );
 }

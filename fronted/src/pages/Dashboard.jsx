@@ -112,23 +112,40 @@ function Dashboard() {
   };
 
   return (
+
+    
     <div className="flex flex-col md:flex-row gap-8">
-      {/* Columna Izquierda: Perfil del Jugador */}
+
       <aside className="w-full md:w-1/3 lg:w-1/4 bg-gray-800 p-6 rounded-lg shadow-lg flex flex-col items-center self-start border-2 border-gray-700">
-        <img src="https://static.wikia.nocookie.net/pokemon/images/5/57/Red_FireRed_and_LeafGreen.png" alt="Entrenador" className="w-280 h-280 object-contain mb-4 transform -scale-x-100" />
+        <img
+          src="https://static.wikia.nocookie.net/pokemon/images/5/57/Red_FireRed_and_LeafGreen.png"
+          alt="Entrenador"
+          className="w-280 h-280 object-contain mb-4 transform -scale-x-100"
+        />
+
         <h2 className="text-2xl font-bold text-poke-yellow">{user?.username}</h2>
+
         <div className="text-poke-light-text mt-2 text-lg flex items-center justify-center">
           <GiPotionBall className="h-5 w-5 text-green-500" />
-          <span> : <span className="font-bold text-white">{user?.curas_restantes}</span></span>
+          <span>
+            {" "}
+            : <span className="font-bold text-white">{user?.curas_restantes}</span>
+          </span>
         </div>
-        <div className="mt-8 w-full">
+
+        {/* BOTONES DEL PERFIL */}
+        <div className="mt-10 w-full flex flex-col gap-4">
+
           <Link to="/pokemonteam">
             <RegularButton>¡A Jugar!</RegularButton>
+          </Link>
+
+          <Link to="/reports">
+           <RegularButton>Reportes y Estadísticas</RegularButton>
           </Link>
         </div>
       </aside>
 
-      {/* Columna Derecha: Contenido de Pokémon */}
       <section className="w-full md:w-2/3 lg:w-3/4">
         {renderPokemonContent()}
       </section>

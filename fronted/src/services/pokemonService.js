@@ -1,5 +1,8 @@
 import djangoApi from './djangoApi';
 
+/* ============================================================
+   OBTENER TODOS LOS POKÉMON DEL USUARIO
+   ============================================================ */
 export const getUserPokemonsService = async () => {
   try {
     const response = await djangoApi.get('/pokemon/');
@@ -10,6 +13,9 @@ export const getUserPokemonsService = async () => {
   }
 };
 
+/* ============================================================
+   GENERAR POKÉMON ALEATORIO (1 VS 1)
+   ============================================================ */
 export const getRandomPokemonService = async () => {
   try {
     const response = await djangoApi.get('/pokemon/random/');
@@ -20,6 +26,22 @@ export const getRandomPokemonService = async () => {
   }
 };
 
+/* ============================================================
+   GENERAR GRUPO ALEATORIO (2–4 POKÉMON) - OPCIONAL
+   ============================================================ */
+export const getRandomGroupPokemonService = async () => {
+  try {
+    const response = await djangoApi.get('/pokemon/random-group/');
+    return response.data;
+  } catch (error) {
+    console.error("Error al generar un grupo de Pokémon aleatorios:", error.response?.data || error.message);
+    throw new Error(error.response?.data?.detail || 'No se pudo generar el grupo de Pokémon.');
+  }
+};
+
+/* ============================================================
+   GUARDAR POKÉMON CAPTURADO
+   ============================================================ */
 export const postSavePokemonService = async (poke_id) => {
   try {
     const response = await djangoApi.post('/pokemon/', { poke_id });
@@ -30,6 +52,9 @@ export const postSavePokemonService = async (poke_id) => {
   }
 };
 
+/* ============================================================
+   ACTUALIZAR NICKNAME
+   ============================================================ */
 export const patchUpdatePokemonNicknameService = async (pokemonId, nickname) => {
   try {
     const response = await djangoApi.patch(`/pokemon/${pokemonId}/nickname/`, { nickname });
@@ -40,6 +65,9 @@ export const patchUpdatePokemonNicknameService = async (pokemonId, nickname) => 
   }
 };
 
+/* ============================================================
+   ELIMINAR POKÉMON (SIGUE SIRVIENDO PARA ADMIN)
+   ============================================================ */
 export const deletePokemonService = async (pokemonId) => {
   try {
     await djangoApi.delete(`/pokemon/${pokemonId}/`);
@@ -49,6 +77,9 @@ export const deletePokemonService = async (pokemonId) => {
   }
 };
 
+/* ============================================================
+   CURACIONES (NO SE TOCAN)
+   ============================================================ */
 export const postRegisterHealUseService = async () => {
   try {
     const response = await djangoApi.post('/players/use-heal/', {});
@@ -69,32 +100,41 @@ export const postResetHealsService = async () => {
   }
 };
 
-export const postWinBattleService = async (pokemonId) => {
+/* ============================================================
+   RESULTADO DE BATALLA (NUEVO ENDPOINT OFICIAL)
+   ============================================================ */
+export const postBattleResultService = async (pokemonId, result) => {
   try {
-  const response = await djangoApi.post(`/pokemon/${pokemonId}/win/`, {});
-  return response.data;
+    const response = await djangoApi.post(`/pokemon/${pokemonId}/battle-result/`, { result });
+    return response.data;
   } catch (error) {
-    console.error("Error al registrar la victoria en batalla:", error.response?.data || error.message);
-    throw new Error(error.response?.data?.detail || 'No se pudo registrar la victoria en batalla.');
+    console.error("Error al registrar resultado de batalla:", error.response?.data || error.message);
+    throw new Error(error.response?.data?.detail || 'No se pudo registrar el resultado de batalla.');
   }
 };
 
+/* ============================================================
+   OBTENER MI EQUIPO DE BATALLA
+   ============================================================ */
 export const getMyPokemonTeamService = async () => {
   try {
     const response = await djangoApi.get('/players/list-my-team/');
     return response.data;
   } catch (error) {
-    console.error("Error al obtener el equipo de Pokémon del usuario:", error.response?.data || error.message);
+    console.error("Error al obtener el equipo del usuario:", error.response?.data || error.message);
     throw new Error(error.response?.data?.detail || 'No se pudo cargar tu equipo de Pokémon.');
   }
 };
 
+/* ============================================================
+   DEFINIR MI EQUIPO (HASTA 4 POKÉMON)
+   ============================================================ */
 export const postSetPokemonTeamService = async (teamIdList) => {
   try {
     const response = await djangoApi.post('/players/my-team/', { pokemon_ids: teamIdList });
     return response.data;
   } catch (error) {
-    console.error("Error al establecer el equipo de Pokémon:", error.response?.data || error.message);
-    throw new Error(error.response?.data?.detail || 'No se pudo establecer el equipo de Pokémon.');
+    console.error("Error al establecer equipo:", error.response?.data || error.message);
+    throw new Error(error.response?.data?.detail || 'No se pudo establecer tu equipo.');
   }
 };

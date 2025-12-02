@@ -6,6 +6,7 @@ import Dashboard from "./pages/Dashboard";
 import MyPokemonTeam from "./pages/MyPokemonTeam";
 import NotFound from "./pages/NotFound";
 import './App.css'
+import ReportsPage from "./pages/ReportsPage";
 import Header from "./components/Header";
 import PrivateRoute from "./components/PrivateRoute";
 
@@ -44,6 +45,15 @@ function App() {
                   <MyPokemonTeam />
                 </PrivateRoute>
               } 
+            />
+
+            <Route 
+              path="/reports" 
+              element={
+                <PrivateRoute>
+                  <ReportsPage />
+                </PrivateRoute>
+              }
             />
 
             <Route 
