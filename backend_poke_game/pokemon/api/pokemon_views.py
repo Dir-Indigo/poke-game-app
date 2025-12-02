@@ -76,6 +76,22 @@ class PokemonViewSet(viewsets.ModelViewSet):
             return Response({"error": "Could not fetch Pokémon from PokeAPI."}, status=status.HTTP_400_BAD_REQUEST)
         return Response(poke_data)
 
+    @action(detail=False, methods=['get'], url_path='random-opponents')
+    def get_random_opponents(self, request):
+        num_opponents = random.randint(2, 4)
+        opponents = []
+        for _ in range(num_opponents):
+            try:
+                poke_data = fetch_pokemon_data(randomize=True)
+                opponents.append(poke_data)
+            except requests.RequestException:
+                pass
+
+        if not opponents:
+            return Response({"error": "Could not fetch any Pokémon from PokeAPI."}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(opponents)
+
     @action(detail=True, methods=['post'], url_path='win')
     def win_battle(self, request, pk=None):
         pokemon = self.get_object()

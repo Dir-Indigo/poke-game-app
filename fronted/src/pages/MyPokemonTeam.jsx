@@ -108,7 +108,7 @@ function MyPokemonTeam() {
         
         {/* Botón de Confirmación */}
         <div className="mt-2 text-center">
-        <RegularButton onClick={handleConfirmTeam} disabled={selectedTeam.length === 0 || selectedTeam.length > 4}>
+        <RegularButton onClick={handleConfirmTeam} disabled={selectedTeam.length === 0}>
             Guardar Equipo y Luchar
         </RegularButton>
         </div>

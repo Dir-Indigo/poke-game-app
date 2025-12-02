@@ -98,3 +98,13 @@ export const postSetPokemonTeamService = async (teamIdList) => {
     throw new Error(error.response?.data?.detail || 'No se pudo establecer el equipo de Pokémon.');
   }
 };
+
+export const getRandomOpponentsService = async () => {
+  try {
+    const response = await djangoApi.get('/pokemon/random-opponents/');
+    return response.data;
+  } catch (error) {
+    console.error("Error al obtener oponentes aleatorios:", error.response?.data || error.message);
+    throw new Error(error.response?.data?.detail || 'No se pudieron obtener oponentes aleatorios.');
+  }
+};
