@@ -78,3 +78,8 @@ export const getMyMostWins = () =>
 
 export const getMyMostUsed = () =>
   djangoApi.get("/reports/me/top-used/");
+
+export const getArcadeOpponentsService = async () => {
+  const res = await djangoApi.get("/pokemon/arcade-match/");
+  return res.data.pokemons;
+};
