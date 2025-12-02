@@ -3,6 +3,7 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, Permis
 from django.core.validators import MaxValueValidator
 from rest_framework.exceptions import ValidationError
 
+
 class PlayerManager(BaseUserManager):
     def create_user(self, username, password=None):
         if not username:
@@ -28,6 +29,9 @@ class Player(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     team = models.ManyToManyField('Pokemon', related_name='players')
 
+    wins = models.IntegerField(default=0)  # Total de batallas ganadas
+    uses = models.IntegerField(default=0)  # Veces que participó en batallas
+
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = []
     objects = PlayerManager()
@@ -52,3 +56,14 @@ class Player(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.username
+
+    def add_win(self):
+        """Suma una victoria."""
+        self.wins += 1
+        self.uses += 1
+        self.save()
+
+    def add_use(self):
+        """Suma una participación (uso)."""
+        self.uses += 1
+        self.save()

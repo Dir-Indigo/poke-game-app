@@ -20,8 +20,24 @@ class Pokemon(models.Model):
 
     special2_name = models.CharField(max_length=100, blank=True, null=True)
     special2_power = models.IntegerField(default=0)
+    wins = models.IntegerField(default=0)  # Cuántas batallas ganó
+    uses = models.IntegerField(default=0)  # Cuántas veces fue usado
+    is_active = models.BooleanField(default=True)
 
     def __str__(self):
         if self.nickname:
             return f"{self.owner.username}'s {self.nickname} ({self.name})"
         return f"{self.owner.username}'s {self.name}"
+
+    class Meta:
+        ordering = ['-wins', '-uses', 'name']
+
+    def add_use(self):
+        """Suma 1 uso al Pokémon"""
+        self.uses += 1
+        self.save()
+
+    def add_win(self):
+        """Suma 1 victoria al Pokémon"""
+        self.wins += 1
+        self.save()
