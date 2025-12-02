@@ -5,11 +5,10 @@ import Login from "./pages/Login";
 import BattlePokemon from "./pages/BattlePokemon";
 import Dashboard from "./pages/Dashboard";
 import MyPokemonTeam from "./pages/MyPokemonTeam";
-import RankingPage from "./pages/RankingPage";
+import RankingPage from "./pages/RankingPage"; // ⭐ Nuevo
 import NotFound from "./pages/NotFound";
 import Header from "./components/Header";
 import PrivateRoute from "./components/PrivateRoute";
-import ArcadeBattle from "./pages/ArcadeBattle";
 
 import "./App.css";
 
@@ -58,8 +57,6 @@ function App() {
                 </PrivateRoute>
               }
             />
-
-            <Route path="/arcade" element={<ArcadeBattle />} />
 
             <Route path="/" element={<Navigate to="/login" />} />
 

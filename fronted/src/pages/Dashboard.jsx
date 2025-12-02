@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
-
+import { Link } from 'react-router-dom';
 import {
   getUserPokemonsService,
   getRandomPokemonService,
@@ -16,7 +15,6 @@ import { GiPotionBall } from 'react-icons/gi';
 
 function Dashboard() {
   const { user } = useAuth();
-  const navigate = useNavigate();
 
   const [pokemons, setPokemons] = useState([]);
   const [initialChoices, setInitialChoices] = useState([]);
@@ -73,7 +71,9 @@ function Dashboard() {
   const handleUpdatePokemon = (updatedPokemon) => {
     setPokemons((currentPokemons) =>
       currentPokemons.map((p) =>
-        p.id === updatedPokemon.id ? { ...p, ...updatedPokemon } : p
+        p.id === updatedPokemon.id
+          ? { ...p, ...updatedPokemon }
+          : p
       )
     );
   };
@@ -89,7 +89,6 @@ function Dashboard() {
           <p className="text-lg text-poke-light-text mb-6">
             Haz clic en el Pokémon que quieras que te acompañe en tu aventura.
           </p>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {initialChoices.map((pokemon) => (
               <SelectablePokemonCard
@@ -139,7 +138,6 @@ function Dashboard() {
         </div>
 
         <div className="mt-8 w-full space-y-3">
-
           <Link to="/pokemonTeam">
             <RegularButton>¡A Jugar!</RegularButton>
           </Link>
@@ -149,12 +147,6 @@ function Dashboard() {
               Ver ranking global
             </RegularButton>
           </Link>
-
-          {/* BOTÓN ARCADE */}
-          <RegularButton onClick={() => navigate('/pokemonTeam?mode=arcade')}>
-            🎮 Modo Arcade (Emparejamiento Justo)
-          </RegularButton>
-
         </div>
       </aside>
 

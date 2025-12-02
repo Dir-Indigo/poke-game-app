@@ -1,22 +1,36 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+
 import {
   getMyPokemonTeamService,
   getArcadeOpponentsService,
   postBattleResultService,
 } from "../services/pokemonService";
-import { initTeam, getActive, applyDamageToActive, isAllFainted, findNextAliveIndexAfter, switchActive } from "../utils/battleTeamLogic";
+
+import {
+  initTeam,
+  getActive,
+  applyDamageToActive,
+  isAllFainted,
+  findNextAliveIndexAfter,
+  switchActive
+} from "../utils/battleTeamLogic";
+
 import RegularButton from "../components/reutilizables/RegularButton";
 import HealthBar from "../components/reutilizables/HealthBar";
 
 export default function ArcadeBattle() {
   const navigate = useNavigate();
+
   const [playerTeam, setPlayerTeam] = useState(null);
   const [opponentTeam, setOpponentTeam] = useState(null);
   const [battleLog, setBattleLog] = useState("Preparando batalla...");
   const [isBattleOver, setIsBattleOver] = useState(false);
   const [battleResult, setBattleResult] = useState(null);
 
+  const endProcessed = useRef(false); // <-- evita que el efecto final ejecute más de una vez
+
+  // 🔹 1. Cargar equipos una sola vez
   useEffect(() => {
     const setup = async () => {
       try {
@@ -30,6 +44,7 @@ export default function ArcadeBattle() {
         setOpponentTeam(oTeam);
         setBattleLog("¡Batalla Arcade Iniciada!");
       } catch (err) {
+        console.error(err);
         setBattleLog("Error cargando la batalla");
       }
     };
@@ -37,17 +52,30 @@ export default function ArcadeBattle() {
     setup();
   }, []);
 
+  // 🔹 2. Finalizar batalla (hook siempre en el mismo orden)
+  useEffect(() => {
+    if (!isBattleOver) return;
+    if (endProcessed.current) return;
+    endProcessed.current = true;
+
+    const player = getActive(playerTeam);
+    if (!player || !battleResult) return;
+
+    postBattleResultService(player.id, battleResult)
+      .catch(() => console.error("Error registrando resultado de batalla"));
+  }, [isBattleOver, battleResult, playerTeam]);
+
   if (!playerTeam || !opponentTeam) return <p>Cargando...</p>;
 
   const player = getActive(playerTeam);
   const enemy = getActive(opponentTeam);
 
-  // ATAQUE
+  // 🔹 3. ATAQUE JUGADOR
   const handleAttack = () => {
     const damage = Math.floor(player.attack * 1.1);
     const [newOppTeam, fainted] = applyDamageToActive(opponentTeam, damage);
-    setOpponentTeam(newOppTeam);
 
+    setOpponentTeam(newOppTeam);
     setBattleLog(`¡${player.name} atacó!`);
 
     if (fainted) {
@@ -63,11 +91,12 @@ export default function ArcadeBattle() {
     }
   };
 
-  const enemyAttack = (team) => {
+  // 🔹 4. ATAQUE ENEMIGO
+  const enemyAttack = (currentOppTeam) => {
     const damage = Math.floor(enemy.attack * 1.1);
     const [newPTeam, fainted] = applyDamageToActive(playerTeam, damage);
-    setPlayerTeam(newPTeam);
 
+    setPlayerTeam(newPTeam);
     setBattleLog(`¡${enemy.name} contraatacó!`);
 
     if (fainted) {
@@ -81,20 +110,9 @@ export default function ArcadeBattle() {
     }
   };
 
-  // FINALIZAR BATALLA
-useEffect(() => {
-  if (!isBattleOver) return;
-  if (!player) return;
-  if (!battleResult) return;
-
-  postBattleResultService(player.id, battleResult)
-    .catch(() => console.error("Error registrando resultado de batalla"));
-}, [isBattleOver, player, battleResult]);
-
   return (
     <div className="p-6">
       <h1 className="text-yellow-300 text-3xl mb-4">Modo Arcade</h1>
-
       <p className="text-white mb-4">{battleLog}</p>
 
       <div className="flex justify-between">
@@ -111,7 +129,9 @@ useEffect(() => {
 
       <div className="mt-6">
         {!isBattleOver ? (
-          <RegularButton onClick={handleAttack}>Atacar</RegularButton>
+          <RegularButton onClick={handleAttack}>
+            Atacar
+          </RegularButton>
         ) : (
           <RegularButton onClick={() => navigate("/dashboard")}>
             Volver al Dashboard

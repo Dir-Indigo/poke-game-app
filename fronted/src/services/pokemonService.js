@@ -44,7 +44,6 @@ export const postBattleResultService = async (pokemonId, result) => {
   return res.data;
 };
 
-
 export const getMyPokemonTeamService = async () => {
   const res = await djangoApi.get("/players/list-my-team/");
   return res.data;
@@ -56,7 +55,6 @@ export const postSetPokemonTeamService = async (teamIdList) => {
   });
   return res.data;
 };
-
 
 export const getRandomOpponentsService = async () => {
   const res = await djangoApi.get("/pokemon/random-group/");
@@ -78,8 +76,3 @@ export const getMyMostWins = () =>
 
 export const getMyMostUsed = () =>
   djangoApi.get("/reports/me/top-used/");
-
-export const getArcadeOpponentsService = async () => {
-  const res = await djangoApi.get("/pokemon/arcade-match/");
-  return res.data.pokemons;
-};

@@ -48,20 +48,20 @@ function MyPokemonTeam() {
     }, []);
 
     const handleSelectForTeam = (pokemon) => {
-        setSelectedTeam(currentTeam => {
-            if (currentTeam.find(p => p.id === pokemon.id)) {
-                return currentTeam.filter(p => p.id !== pokemon.id);
+        setSelectedTeam(current => {
+            if (current.find(p => p.id === pokemon.id)) {
+                return current.filter(p => p.id !== pokemon.id);
             }
-            if (currentTeam.length < 4) {
-                return [...currentTeam, pokemon];
+            if (current.length < 4) {
+                return [...current, pokemon];
             }
-            return currentTeam;
+            return current;
         });
     };
 
     const handleSetLeader = (pokemonToLead) => {
-        setSelectedTeam(currentTeam => {
-            const newTeam = currentTeam.filter(p => p.id !== pokemonToLead.id);
+        setSelectedTeam(current => {
+            const newTeam = current.filter(p => p.id !== pokemonToLead.id);
             newTeam.unshift(pokemonToLead);
             return newTeam;
         });
@@ -69,18 +69,8 @@ function MyPokemonTeam() {
 
     const handleConfirmTeam = async () => {
         const teamIds = selectedTeam.map(p => p.id);
-
-        // Detectar modo desde la URL
-        const params = new URLSearchParams(window.location.search);
-        const mode = params.get("mode");
-
         await postSetPokemonTeamService(teamIds);
-
-        if (mode === "arcade") {
-            navigate('/arcade');
-        } else {
-            navigate('/battle');
-        }
+        navigate('/battle');
     };
 
     if (loading) return <p>Cargando tu equipo...</p>;
@@ -90,14 +80,14 @@ function MyPokemonTeam() {
         <div>
             <h1 className="text-3xl font-bold mb-4">Configura tu Equipo de Batalla</h1>
 
-            {/* TEAM SELECTION */}
+            {/* Team */}
             <div className="mb-8">
                 <h2 className="text-2xl font-semibold mb-3 text-poke-yellow">
                     Tu Equipo ({selectedTeam.length}/4)
                 </h2>
+
                 <p className="text-m mb-3">
                     El Pokémon <span className="font-bold text-poke-yellow-dark">Líder</span> luchará.
-                    Haz clic en otro miembro del equipo para cambiar el líder.
                 </p>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-gray-900 p-4 rounded-lg min-h-[180px]">
@@ -121,13 +111,13 @@ function MyPokemonTeam() {
                                 <div
                                     className="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-gray-900"
                                     style={{ backgroundColor: getLevelColor(p.level) }}
-                                    title={`Nivel ${p.level}`}
                                 >
                                     {p.level}
                                 </div>
                             )}
 
                             <img src={p.sprite_url} alt={p.name} className="mx-auto h-24 w-24" />
+
                             <p className="text-center font-bold text-poke-yellow mt-2">{p.name}</p>
                             {p.nickname && <p className="text-center text-sm italic">"{p.nickname}"</p>}
                         </div>
@@ -135,7 +125,7 @@ function MyPokemonTeam() {
                 </div>
             </div>
 
-            {/* BOTÓN */}
+            {/* Confirm */}
             <div className="mt-2 text-center">
                 <RegularButton 
                     onClick={handleConfirmTeam}
@@ -145,13 +135,13 @@ function MyPokemonTeam() {
                 </RegularButton>
             </div>
 
-            {/* LISTA DE POKEMON */}
+            {/* Available */}
             <div>
                 <h2 className="mt-2 text-2xl font-semibold mb-3">Tus Pokémon Disponibles</h2>
 
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                     {userPokemons
-                        .filter(p => !selectedTeam.some(selected => selected.id === p.id))
+                        .filter(p => !selectedTeam.some(sel => sel.id === p.id))
                         .map((p) => (
                             <div 
                                 key={p.id}
@@ -162,7 +152,6 @@ function MyPokemonTeam() {
                                     <div
                                         className="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-gray-900"
                                         style={{ backgroundColor: getLevelColor(p.level) }}
-                                        title={`Nivel ${p.level}`}
                                     >
                                         {p.level}
                                     </div>
