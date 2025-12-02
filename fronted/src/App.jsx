@@ -1,14 +1,16 @@
+
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import Login from "./pages/Login";
 import BattlePokemon from "./pages/BattlePokemon";
 import Dashboard from "./pages/Dashboard";
 import MyPokemonTeam from "./pages/MyPokemonTeam";
+import RankingPage from "./pages/RankingPage"; // ⭐ Nuevo
 import NotFound from "./pages/NotFound";
-import './App.css'
-import ReportsPage from "./pages/ReportsPage";
 import Header from "./components/Header";
 import PrivateRoute from "./components/PrivateRoute";
+
+import "./App.css";
 
 function App() {
   return (
@@ -20,54 +22,50 @@ function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
 
-            <Route 
-              path="/dashboard" 
+            <Route
+              path="/dashboard"
               element={
                 <PrivateRoute>
                   <Dashboard />
                 </PrivateRoute>
-              } 
+              }
             />
 
-            <Route 
-              path="/battle" 
+            <Route
+              path="/battle"
               element={
                 <PrivateRoute>
                   <BattlePokemon />
                 </PrivateRoute>
-              } 
+              }
             />
 
-            <Route 
-              path="/pokemonTeam" 
+            <Route
+              path="/pokemonTeam"
               element={
                 <PrivateRoute>
                   <MyPokemonTeam />
                 </PrivateRoute>
-              } 
+              }
             />
 
-            <Route 
-              path="/reports" 
+            <Route
+              path="/ranking"
               element={
                 <PrivateRoute>
-                  <ReportsPage />
+                  <RankingPage />
                 </PrivateRoute>
               }
             />
 
-            <Route 
-              path="/" 
-              element={<Navigate to="/login" />} 
-            />
+            <Route path="/" element={<Navigate to="/login" />} />
 
             <Route path="*" element={<NotFound />} />
-
           </Routes>
         </main>
       </AuthProvider>
     </BrowserRouter>
-  )
+  );
 }
 
 export default App;

@@ -3,7 +3,6 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, Permis
 from django.core.validators import MaxValueValidator
 from rest_framework.exceptions import ValidationError
 
-
 class PlayerManager(BaseUserManager):
     def create_user(self, username, password=None):
         if not username:
@@ -27,10 +26,12 @@ class Player(AbstractBaseUser, PermissionsMixin):
     heals = models.PositiveIntegerField(default=2, validators=[MaxValueValidator(2)])
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+
     team = models.ManyToManyField('Pokemon', related_name='players')
 
-    wins = models.IntegerField(default=0)  # Total de batallas ganadas
-    uses = models.IntegerField(default=0)  # Veces que participó en batallas
+    # NUEVOS CAMPOS PARA REPORTES
+    wins = models.IntegerField(default=0)   # batallas ganadas
+    uses = models.IntegerField(default=0)   # total de participaciones
 
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = []
@@ -47,23 +48,21 @@ class Player(AbstractBaseUser, PermissionsMixin):
 
     def clean(self):
         if self.team.count() > 4:
-            raise ValidationError("El equipo no puede tener mas de 4 pokemons")
+            raise ValidationError("El equipo no puede tener más de 4 pokémon")
 
     def set_team(self, pokemon_ids):
         if len(pokemon_ids) > 4:
-            raise ValidationError("El equipo no puede tener mas de 4 pokemons")
+            raise ValidationError("El equipo no puede tener más de 4 pokémon")
         self.team.set(pokemon_ids)
 
-    def __str__(self):
-        return self.username
-
     def add_win(self):
-        """Suma una victoria."""
         self.wins += 1
         self.uses += 1
         self.save()
 
     def add_use(self):
-        """Suma una participación (uso)."""
         self.uses += 1
         self.save()
+
+    def __str__(self):
+        return self.username

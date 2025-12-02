@@ -6,7 +6,6 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from pokemon.models import Player, Pokemon
 
-
 class PlayerSeriaizer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
 
@@ -15,8 +14,7 @@ class PlayerSeriaizer(serializers.ModelSerializer):
         fields = ('id', 'username', 'heals', 'password')
 
     def create(self, validated_data):
-        player = Player.objects.create_user(**validated_data)
-        return player
+        return Player.objects.create_user(**validated_data)
 
 
 class PlayerViewSet(viewsets.ModelViewSet):
@@ -24,95 +22,65 @@ class PlayerViewSet(viewsets.ModelViewSet):
     serializer_class = PlayerSeriaizer
     permission_classes = [IsAuthenticated]
 
+    # Perfil
     @action(detail=False, methods=['get'], url_path='me')
     def me(self, request):
-        serializer = self.get_serializer(request.user)
-        return Response(serializer.data)
+        return Response(self.get_serializer(request.user).data)
 
+    # Usar cura
     @action(detail=False, methods=['post'], url_path='use-heal')
     def use_heal(self, request):
         player = request.user
-
         if player.heals <= 0:
-            return Response({"error": "No heals left!"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "No heals left!"}, status=400)
 
         player.use_heal()
-        return Response({
-            "status": "heal used",
-            "player": player.username,
-            "heals_left": player.heals
-        })
+        return Response({"status": "heal used", "heals_left": player.heals})
 
+    # Reset curas
     @action(detail=False, methods=['post'], url_path='reset-heals')
     def reset_heals(self, request):
         player = request.user
         player.reset_heals()
-        return Response({
-            'status': 'heals reset',
-            'player': player.username,
-            'heals': player.heals
-        })
+        return Response({"status": "heals reset", "heals": player.heals})
 
+    # Registro sin autenticación
     @action(detail=False, methods=['post'], url_path='register', permission_classes=[])
     def register(self, request):
         serializer = self.get_serializer(data=request.data)
-
         if serializer.is_valid():
-
-            # Validar contraseña
-            password = serializer.validated_data.get('password')
             try:
-                validate_password(password)
+                validate_password(serializer.validated_data["password"])
             except ValidationError as e:
-                return Response({'password': e.messages}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"password": e.messages}, status=400)
 
-            # Crear usuario
             player = serializer.save()
+            return Response(self.get_serializer(player).data, status=201)
+        return Response(serializer.errors, status=400)
 
-            return Response(
-                self.get_serializer(player).data,
-                status=status.HTTP_201_CREATED
-            )
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+    # Obtener mi equipo
     @action(detail=False, methods=['get'], url_path='list-my-team')
     def get_team(self, request):
         from pokemon.api.pokemon_views import PokemonSeriaizer
-        player = request.user
-        team = player.team.order_by('id')
-        serializer = PokemonSeriaizer(team, many=True)
-        return Response(serializer.data)
+        team = request.user.team.order_by('id')
+        return Response(PokemonSeriaizer(team, many=True).data)
 
+    # Guardar equipo
     @action(detail=False, methods=['post'], url_path='my-team')
     def set_team(self, request):
         player = request.user
-        pokemon_ids = request.data.get('pokemon_ids', [])
+        ids = request.data.get('pokemon_ids', [])
 
-        # Validar formato
-        if not isinstance(pokemon_ids, list) or len(pokemon_ids) > 4:
-            return Response(
-                {"error": "Debes enviar una lista de hasta 4 IDs de Pokémon."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        if not isinstance(ids, list) or len(ids) > 4:
+            return Response({"error": "El equipo debe tener hasta 4 pokémon"}, status=400)
 
-        # Buscar pokémones
-        pokemons = Pokemon.objects.filter(id__in=pokemon_ids, owner=player)
+        pokemons = Pokemon.objects.filter(id__in=ids, owner=player)
 
-        if pokemons.count() != len(pokemon_ids):
-            return Response(
-                {"error": "Algunos Pokémon no existen o no te pertenecen."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        if pokemons.count() != len(ids):
+            return Response({"error": "Pokémon inválidos o no tuyos"}, status=400)
 
-        # Validar inactivos ANTES de guardar
         if pokemons.filter(is_active=False).exists():
-            return Response(
-                {"error": "No puedes añadir Pokémon inactivos al equipo."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error": "No puedes usar pokémon inactivos"}, status=400)
 
-        # Guardar equipo
-        player.set_team(pokemon_ids)
-
-        return Response({"status": "Equipo actualizado correctamente."})
+        player.set_team(ids)
+        return Response({"status": "Equipo actualizado"})

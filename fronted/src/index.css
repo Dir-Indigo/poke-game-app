@@ -11,6 +11,11 @@
   --poke-dark-text: #213547;
   --poke-light-text: #f1f1f1;
 
+  --level-C: #606563;
+  --level-B: #4acd25;
+  --level-A: #025ed7;
+  --level-S: #830889;
+
   font-family: 'Press Start 2P', system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;

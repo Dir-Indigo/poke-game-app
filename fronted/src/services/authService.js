@@ -31,9 +31,8 @@ export const register = async (username, password) => {
   return response.data;
 };
 
-/**
- * Cierra la sesión del usuario.
- */
+
+
 export const logout = () => {
   localStorage.removeItem('accessToken');
   localStorage.removeItem('refreshToken');
