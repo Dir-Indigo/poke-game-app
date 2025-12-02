@@ -24,17 +24,11 @@ class PlayerViewSet(viewsets.ModelViewSet):
     serializer_class = PlayerSeriaizer
     permission_classes = [IsAuthenticated]
 
-    # ===========================
-    #  MI PERFIL
-    # ===========================
     @action(detail=False, methods=['get'], url_path='me')
     def me(self, request):
         serializer = self.get_serializer(request.user)
         return Response(serializer.data)
 
-    # ===========================
-    #  USAR CURA
-    # ===========================
     @action(detail=False, methods=['post'], url_path='use-heal')
     def use_heal(self, request):
         player = request.user
@@ -49,9 +43,6 @@ class PlayerViewSet(viewsets.ModelViewSet):
             "heals_left": player.heals
         })
 
-    # ===========================
-    #  RESETEAR CURAS
-    # ===========================
     @action(detail=False, methods=['post'], url_path='reset-heals')
     def reset_heals(self, request):
         player = request.user
@@ -62,9 +53,6 @@ class PlayerViewSet(viewsets.ModelViewSet):
             'heals': player.heals
         })
 
-    # ===========================
-    #  REGISTRO DE USUARIOS (SIN JWT)
-    # ===========================
     @action(detail=False, methods=['post'], url_path='register', permission_classes=[])
     def register(self, request):
         serializer = self.get_serializer(data=request.data)
@@ -88,9 +76,6 @@ class PlayerViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    # ===========================
-    #  LISTAR MI TEAM
-    # ===========================
     @action(detail=False, methods=['get'], url_path='list-my-team')
     def get_team(self, request):
         from pokemon.api.pokemon_views import PokemonSeriaizer
@@ -99,9 +84,6 @@ class PlayerViewSet(viewsets.ModelViewSet):
         serializer = PokemonSeriaizer(team, many=True)
         return Response(serializer.data)
 
-    # ===========================
-    #  DEFINIR MI TEAM
-    # ===========================
     @action(detail=False, methods=['post'], url_path='my-team')
     def set_team(self, request):
         player = request.user
@@ -123,7 +105,7 @@ class PlayerViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # ❌ Validar inactivos ANTES de guardar
+        # Validar inactivos ANTES de guardar
         if pokemons.filter(is_active=False).exists():
             return Response(
                 {"error": "No puedes añadir Pokémon inactivos al equipo."},

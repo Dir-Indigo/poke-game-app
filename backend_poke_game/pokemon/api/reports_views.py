@@ -1,14 +1,9 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-
 from pokemon.models import Pokemon, Player
 from pokemon.api.pokemon_views import PokemonSeriaizer
 
-
-# =====================================================================
-#   REPORTES DEL JUGADOR ACTUAL
-# =====================================================================
 class ReportsView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -34,10 +29,6 @@ class ReportsView(APIView):
             "pokemon_list": PokemonSeriaizer(my_pokemon, many=True).data
         })
 
-
-# =====================================================================
-#   REPORTES GLOBALES
-# =====================================================================
 class GlobalReportsView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -57,9 +48,6 @@ class GlobalReportsView(APIView):
         })
 
 
-# =====================================================================
-#   TOP 10 POKÉMON MÁS USADOS
-# =====================================================================
 class TopPokemonUsedView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -82,10 +70,6 @@ class TopPokemonUsedView(APIView):
             ]
         })
 
-
-# =====================================================================
-#   TOP 10 POKÉMON CON MÁS VICTORIAS
-# =====================================================================
 class TopPokemonWinsView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -108,10 +92,6 @@ class TopPokemonWinsView(APIView):
             ]
         })
 
-
-# =====================================================================
-#   TOP JUGADORES CON MÁS VICTORIAS
-# =====================================================================
 class TopPlayersWinsView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -130,10 +110,6 @@ class TopPlayersWinsView(APIView):
             ]
         })
 
-
-# =====================================================================
-#   TOP JUGADORES MÁS ACTIVOS (más batallas jugadas)
-# =====================================================================
 class TopPlayersUsedView(APIView):
     permission_classes = [IsAuthenticated]
 
